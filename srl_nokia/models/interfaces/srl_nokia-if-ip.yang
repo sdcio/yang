@@ -164,9 +164,6 @@ module srl_nokia-if-ip {
             "The IPv4 address and prefix length in CIDR notation
 
              Subnets on the same subinterface are allowed to overlap as long as the host bits are different. When a locally originated unicast packet is destined to a host covered by multiple subnets associated with a subinterface, the source address is chosen to be the numerically lowest IP address among all these subnets. For example, if the addresses 172.16.1.1/12, 172.16.1.2/12, and 172.16.1.3/12 are configured on the same interface, 172.16.1.1 would be used as a local address when you issue a ping 172.16.1.5 command";
-          must "not(starts-with(.,'0.') or starts-with(.,'127.') or re-match(.,'22[4-9]\\..*') or re-match(.,'2[3-5][0-9]\\..*'))" {
-            error-message "Not a valid IPv4 unicast address prefix";
-          }
           must "(../../unnumbered/admin-state != 'enable')" {
             error-message "Assignment of IPv4 addresses is prohibited when the subinterface is unnumbered";
           }
