@@ -1,0 +1,18 @@
+          {
+            "sequence-id": 400,
+            "description": "Accept incoming SSH connections on the default NETCONF port 830",
+            "action": {
+              "accept": {}
+            },
+            "match": {
+              "ipv4": {
+                "protocol": "tcp"
+              },
+              "transport": {
+                "destination-port": {
+                  "value": 830,
+                  "operator": "eq"
+                }
+              }
+            }
+          },
