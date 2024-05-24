@@ -98,7 +98,7 @@ module srl_nokia-bgp-ipvpn {
         "bgp ipvpn instances configured in net-instance";
       leaf id {
         type leafref {
-          path "/srl_nokia-netinst:network-instance/srl_nokia-netinst:protocols/srl_bgp-vpn:bgp-vpn/srl_bgp-vpn:bgp-instance/srl_bgp-vpn:id";
+          path "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../name]/srl_nokia-netinst:protocols/srl_bgp-vpn:bgp-vpn/srl_bgp-vpn:bgp-instance/srl_bgp-vpn:id";
         }
       }
       leaf admin-state {

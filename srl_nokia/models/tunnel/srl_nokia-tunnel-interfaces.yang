@@ -113,7 +113,7 @@ module srl_nokia-tunnel-interfaces {
         description
           "The value of this leaf indicates the context in which the
            vxlan-interface will be used in.";
-        must ".='srl_nokia-if:bridged' or .='srl_nokia-if:routed'" {
+        must ".='bridged' or .='routed'" {
           error-message "unsupported type.";
         }
       }
