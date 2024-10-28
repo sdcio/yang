@@ -12,6 +12,10 @@ module srl_nokia-ethcfm-types {
     "This module defines derived types for configuration and operational state data
      related to Ethernet CFM management.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -150,16 +154,18 @@ module srl_nokia-ethcfm-types {
     reference
       "[IEEE 802.1Q 20.8.1]";
     type enumeration {
-      enum 300hz {
-        description
-          "CCM PDUs are sent every 3.3 milliseconds";
+      enum 10ms {
+        value 1;
       }
-      enum 10ms;
-      enum 100ms;
-      enum 1s;
-      enum 10s;
-      enum 60s;
-      enum 600s;
+      enum 100ms {
+        value 2;
+      }
+      enum 1s {
+        value 3;
+      }
+      enum 10s {
+        value 4;
+      }
     }
   }
 
@@ -756,6 +762,9 @@ module srl_nokia-ethcfm-types {
     description
       "frequency of loopback messages";
     type enumeration {
+      enum 0s {
+        value 0;
+      }
       enum 10ms {
         value 10000;
       }

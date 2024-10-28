@@ -30,6 +30,10 @@ module srl_nokia-pim {
   description
     "This yang file models configuration and state of the PIM protocol";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -73,6 +77,39 @@ module srl_nokia-pim {
   }
 
   grouping pim-global-state {
+    leaf multicast-ecmp-last-rebalance-time {
+      config false;
+      srl_nokia-ext:show-importance "high";
+      description
+        "Last system time where multicast did a ecmp rebalance on this system";
+      type srl_nokia-comm:date-and-time-delta;
+    }
+    leaf multicast-ecmp-next-balance-time {
+      config false;
+      description
+        "The time remaining until the next rebalance would occur.";
+      type uint32;
+      units "seconds";
+    }
+    leaf multicast-ecmp-rebalance-inprogress {
+      config false;
+      description
+        "Whether or not multicast ECMP re-balancing is currently in progress.";
+      type boolean;
+    }
+    leaf multicast-ecmp-rebalance-type {
+      config false;
+      description
+        "The value of this object indicates the type of ECMP rebalance.";
+      type enumeration {
+        enum triggered {
+          value 1;
+        }
+        enum operator-forced {
+          value 2;
+        }
+      }
+    }
     leaf oper-state {
       config false;
       srl_nokia-ext:show-importance "high";
@@ -111,7 +148,8 @@ module srl_nokia-pim {
   grouping pim-ecmp {
     description
       "PIM ECMP Config";
-    leaf ecmp-hashing {
+    container ecmp-hashing {
+      presence "Enable ecmp hashing for pim.";
       srl_nokia-ext:show-importance "high";
       description
         "Enables hashing for multicast streams
@@ -119,10 +157,14 @@ module srl_nokia-pim {
          This command enables hash-based multicast balancing of traffic over ECMP links and causes PIM joins to be distributed over the multiple ECMP paths based on a hash of S and G (and possibly next-hop IP address).
          When a link in the ECMP set is removed, the multicast flows that were using that link are redistributed over the remaining ECMP links using the same hash algorithm.
          When a link is added to the ECMP set new joins may be allocated to the new link based on the hash algorithm, but existing.";
-      type boolean;
-      default "false";
       must 'not(. = true() and ../ecmp-balance = true())' {
         error-message "ecmp-balance and ecmp-hashing are mutually exclusive";
+      }
+      leaf rebalance {
+        description
+          "Enables rebalance for ecmp hashing";
+        type boolean;
+        default "false";
       }
     }
     leaf ecmp-balance {

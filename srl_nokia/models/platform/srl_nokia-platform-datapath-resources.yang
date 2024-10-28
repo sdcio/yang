@@ -30,6 +30,10 @@ module srl_nokia-platform-datapath-resources {
   description
     "This module defines configuration and operational state related to datapath resources in the system";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -108,11 +112,11 @@ module srl_nokia-platform-datapath-resources {
 
   identity mac-addresses {
     base xdp-datapath-resources;
-    if-feature "srl_nokia-feat:trident3 or srl_nokia-feat:trident4 or srl_nokia-feat:platform-vsrl or srl_nokia-feat:future-0-0";
+    if-feature "srl_nokia-feat:trident3 or srl_nokia-feat:trident4 or srl_nokia-feat:platform-vsrl or srl_nokia-feat:fpcx or srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp or srl_nokia-feat:ac5x";
     description
       "MAC lookup table resources
 
-       Reports the number of entries used in the MAC lookup table. On 7220 D1/D2/D3, free entries reflects the total number of entries remaining in shared + dedicated UFT banks";
+       Reports the number of entries used in the MAC lookup table. On 7220 D1/D2/D3/D4/D5, free entries reflects the total number of entries remaining in shared + dedicated UFT banks";
   }
 
   identity mac-next-hops {
@@ -142,7 +146,7 @@ module srl_nokia-platform-datapath-resources {
 
   identity tunnel-next-hops {
     base xdp-datapath-resources;
-    if-feature "srl_nokia-feat:trident3 or srl_nokia-feat:trident4 or srl_nokia-feat:platform-vsrl or srl_nokia-feat:future-0-0 or srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp";
+    if-feature "srl_nokia-feat:trident3 or srl_nokia-feat:trident4 or srl_nokia-feat:platform-vsrl or srl_nokia-feat:fpcx or srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp";
     description
       "Tunnel next-hop resources
 
@@ -221,7 +225,7 @@ module srl_nokia-platform-datapath-resources {
 
   identity mpls-next-hops {
     base xdp-datapath-resources;
-    if-feature "srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp or srl_nokia-feat:future-0-0";
+    if-feature "srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp or srl_nokia-feat:fpcx";
     description
       "MPLS next-hop (NHLFE) resources
 
@@ -230,7 +234,7 @@ module srl_nokia-platform-datapath-resources {
 
   identity mpls-incoming-labels {
     base xdp-datapath-resources;
-    if-feature "srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp or srl_nokia-feat:future-0-0";
+    if-feature "srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp or srl_nokia-feat:fpcx";
     description
       "MPLS label lookup (ILM) resources
 
@@ -239,7 +243,7 @@ module srl_nokia-platform-datapath-resources {
 
   identity originating-tunnels {
     base xdp-datapath-resources;
-    if-feature "srl_nokia-feat:trident3 or srl_nokia-feat:trident4 or srl_nokia-feat:platform-vsrl or srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp";
+    if-feature "srl_nokia-feat:trident3 or srl_nokia-feat:trident4 or srl_nokia-feat:platform-vsrl or srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp or srl_nokia-feat:fpcx";
     description
       "Originating tunnel resources
 
@@ -315,6 +319,24 @@ module srl_nokia-platform-datapath-resources {
       "IP exact match lookup table resources
 
        Reports the number of half-wide entries used in the LEM table. Each MPLS ILM record uses one half-wide entry. Each IPv4 address used as a host route, ARP entry or subnet broadcast address requires a half-wide entry. An IPv6 address used as a host route, or ND entry requires a single-wide entry (2 half-wide entries). Free entries is the remaining number of half-wide entries.";
+  }
+
+  identity ip-tunnel-source-ipv4-addresses {
+    base asic-datapath-resources;
+    if-feature "srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp";
+    description
+      "IP tunnel source IPv4 address resources
+
+       Each IPinIP and GRE tunnel with a different source IPv4 address uses one of these resources.";
+  }
+
+  identity ip-tunnel-source-ipv6-addresses {
+    base asic-datapath-resources;
+    if-feature "srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp";
+    description
+      "IP tunnel source IPv6 address resources
+
+       Each IPinIP and GRE tunnel with a different source IPv6 address uses one of these resources.";
   }
 
   identity underlay-ecmp-groups {
@@ -470,6 +492,17 @@ module srl_nokia-platform-datapath-resources {
       "Level 3 (bottom level) non-ECMP FEC resources.";
   }
 
+  identity decap-next-hop-statistics {
+    base asic-datapath-resources;
+    if-feature "srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp";
+    description
+      "Statistics resources for counting packets matching a tunnel termination entry and then forwarded to a next-hop
+
+       One resource is one packet/octet counter pair that is allocated to counting each case where packets:
+       (a) match a gRIBI-programmed tunnel termination entry and get forwarded to a next-hop that does redirect to another network-instance (1 counter pair for all redirect targets)
+       (b) match a gRIBI-programmed tunnel termination entry and get forwarded to a next-hop that does IP-in-IP encapsulation towards a new endpoint address (1 counter pair per new endpoint address)";
+  }
+
   grouping datapath-resource-monitoring {
     container datapath {
       description
@@ -496,13 +529,13 @@ module srl_nokia-platform-datapath-resources {
             type srl_nokia-comm:percentage;
             default "90";
             description
-              "Sets the threshold that triggers the generation of a WARNING log whenever the utilization of the datapath resource in any linecard (if applicable) or forwarding complex or pipeline (if applicable) reaches this value in a rising direction";
+              "Sets the threshold that triggers the generation of a WARNING log and the setting of 'used-upper-threshold-exceeded' to 'true' whenever the utilization of the datapath resource in any linecard (if applicable) or forwarding complex or pipeline (if applicable) reaches this value in a rising direction";
           }
           leaf upper-threshold-clear {
             type srl_nokia-comm:percentage;
             default "70";
             description
-              "Sets the threshold that triggers the generation of a NOTICE log whenever the utilization of the datapath resource in any linecard (if applicable) or forwarding complex or pipeline (if applicable) reaches this value in a falling direction";
+              "Sets the threshold that triggers the generation of a NOTICE log and the setting of 'used-upper-threshold-exceeded' to 'false' whenever the utilization of the datapath resource in any linecard (if applicable) or forwarding complex or pipeline (if applicable) reaches this value in a falling direction";
           }
         }
       }
@@ -524,20 +557,56 @@ module srl_nokia-platform-datapath-resources {
             type srl_nokia-comm:percentage;
             default "90";
             description
-              "Sets the threshold that triggers the generation of a WARNING log whenever the utilization of the datapath resource in any linecard (if applicable) or forwarding complex or pipeline (if applicable) reaches this value in a rising direction";
+              "Sets the threshold that triggers the generation of a WARNING log and the setting of 'used-upper-threshold-exceeded' to 'true' whenever the utilization of the datapath resource in any linecard (if applicable) or forwarding complex or pipeline (if applicable) reaches this value in a rising direction";
           }
           leaf upper-threshold-clear {
             type srl_nokia-comm:percentage;
             default "70";
             description
-              "Sets the threshold that triggers the generation of a NOTICE log whenever the utilization of the datapath resource in any linecard (if applicable) or forwarding complex or pipeline (if applicable) reaches this value in a falling direction";
+              "Sets the threshold that triggers the generation of a NOTICE log and the setting of 'used-upper-threshold-exceeded' to 'false' whenever the utilization of the datapath resource in any linecard (if applicable) or forwarding complex or pipeline (if applicable) reaches this value in a falling direction";
           }
         }
       }
     }
   }
 
-  grouping resource-reporting {
+  grouping resource-reporting-detailed {
+    leaf used-percent {
+      type srl_nokia-comm:percentage;
+      description
+        "The percentage of the resource that is currently used";
+    }
+    leaf used-entries {
+      type uint32;
+      description
+        "The number of entries that are currently used";
+    }
+    leaf free-entries {
+      type uint32;
+      description
+        "The number of entries that are currently free";
+    }
+    leaf used-high-watermark {
+      if-feature "srl_nokia-feat:datapath-resource-watermarks";
+      type uint32;
+      description
+        "A watermark of highest number of entries used for this resource";
+    }
+    leaf used-last-high-watermark-time {
+      if-feature "srl_nokia-feat:datapath-resource-watermarks";
+      type srl_nokia-comm:date-and-time-delta;
+      description
+        "The timestamp when the high-watermark was last updated";
+    }
+    leaf used-upper-threshold-exceeded {
+      if-feature "srl_nokia-feat:datapath-resource-watermarks";
+      type boolean;
+      description
+        "This value is set to true when the used percentage value (used / (used + free) * 100) has reached (in a rising direction) the configured upper-threshold-set for this resource and false when the used percentage value has reached (in a falling direction) the configured upper-threshold-clear for this resource";
+    }
+  }
+
+  grouping resource-reporting-simple {
     leaf used-percent {
       type srl_nokia-comm:percentage;
       description
@@ -576,7 +645,7 @@ module srl_nokia-platform-datapath-resources {
             description
               "The name of the XDP datapath resource";
           }
-          uses resource-reporting;
+          uses resource-reporting-detailed;
         }
       }
       container asic {
@@ -595,7 +664,7 @@ module srl_nokia-platform-datapath-resources {
             description
               "The name of the ASIC-specific datapath resource";
           }
-          uses resource-reporting;
+          uses resource-reporting-detailed;
         }
       }
     }
@@ -623,7 +692,7 @@ module srl_nokia-platform-datapath-resources {
             description
               "The name of the XDP datapath resource";
           }
-          uses resource-reporting;
+          uses resource-reporting-simple;
         }
       }
     }

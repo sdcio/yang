@@ -6,6 +6,9 @@ module srl_nokia-sync-freq {
   import srl_nokia-common {
     prefix srl_nokia-comm;
   }
+  import srl_nokia-features {
+    prefix srl_nokia-feat;
+  }
   import srl_nokia-sync-types {
     prefix srl_nokia-sync-types;
   }
@@ -19,6 +22,10 @@ module srl_nokia-sync-freq {
     "Nokia SR Linux Support
      Web: <http://www.nokia.com>";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -102,6 +109,7 @@ module srl_nokia-sync-freq {
           }
           case ptp {
             container ptp {
+              if-feature "srl_nokia-feat:sync-ptp-freq";
               presence "specifies PTP as source";
               must '(not (../interface)) and (not (../sync0)) and (not (../gnss))' {
                 error-message "Must delete other source before configuring ptp";
@@ -113,6 +121,7 @@ module srl_nokia-sync-freq {
           }
           case sync0 {
             container sync0 {
+              if-feature "srl_nokia-feat:sync-ptp-sync-port-support";
               presence "specifies sync0 port as source";
               must '(not (../interface)) and (not (../ptp)) and (not (../gnss))' {
                 error-message "Must delete other source before configuring sync0";
@@ -121,6 +130,7 @@ module srl_nokia-sync-freq {
           }
           case gnss {
             container gnss {
+              if-feature "srl_nokia-feat:sync-gnss";
               presence "specifies gnss as source";
               must '(not (../interface)) and (not (../ptp)) and (not (../sync0))' {
                 error-message "Must delete other source before configuring gnss";

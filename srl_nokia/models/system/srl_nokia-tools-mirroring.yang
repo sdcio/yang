@@ -24,6 +24,10 @@ module srl_nokia-tools-mirroring {
   description
     "This module defines tools command for mirroring (SPAN/ERSPAN).";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -36,7 +40,7 @@ module srl_nokia-tools-mirroring {
   grouping tools-mirroring-top {
     container mirroring {
       presence "Configure tools mirroring";
-      if-feature "srl-feat:trident4 or srl-feat:jericho2cp";
+      if-feature "srl-feat:mirroring-tools-mirror-dest-statistics";
       list mirroring-instance {
         key "name";
         leaf name {
@@ -52,9 +56,8 @@ module srl_nokia-tools-mirroring {
   grouping mirror-destination-top {
     container mirror-destination {
       description
-        "Configure mirror destination";
+        "tools mirror destination";
       container statistics {
-        if-feature "srl-feat:trident4 or srl-feat:jericho2cp";
         leaf clear {
           type empty;
         }
@@ -63,7 +66,6 @@ module srl_nokia-tools-mirroring {
   }
 
   augment "/srl-tools-system:system" {
-    if-feature "srl-feat:trident4 or srl-feat:jericho2cp";
     uses tools-mirroring-top;
   }
 }

@@ -45,6 +45,10 @@ module srl_nokia-grpc {
   description
     "This module defines configuration and operational state data related to gRPC servers.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -65,6 +69,12 @@ module srl_nokia-grpc {
     base grpc-service;
     description
       "gNOI: gRPC Network Operations Interface";
+  }
+
+  identity gnoi.bgp {
+    base grpc-service;
+    description
+      "gNOI: BGP Service";
   }
 
   identity gnoi.factory_reset {
@@ -415,6 +425,16 @@ module srl_nokia-grpc {
 
            A session is defined as an individual RPC invocation, which could result in a single client generating multiple sessions.
            In the context of a Subscribe RPC this is the number of simultaneously active SubscribeRequests across all Subscribe RPCs.";
+      }
+      leaf max-concurrent-streams {
+        if-feature "srl-feat:grpc-server-max-concurrent-streams";
+        type uint32 {
+          range "0..2147483647";
+        }
+        srl-ext:show-importance "low";
+        default "100";
+        description
+          "Set a limit on the number of concurrent gRPC streams";
       }
       leaf metadata-authentication {
         type boolean;

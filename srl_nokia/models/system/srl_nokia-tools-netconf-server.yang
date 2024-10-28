@@ -24,6 +24,10 @@ module srl_nokia-tools-netconf-server {
   description
     "Tools related to the NETCONF server";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -33,7 +37,7 @@ module srl_nokia-tools-netconf-server {
     list netconf-server {
       key "name";
       leaf name {
-        type srl-comm:name;
+        type srl-comm:restricted-name;
         description
           "NETCONF server instance name";
       }
@@ -68,7 +72,8 @@ module srl_nokia-tools-netconf-server {
   }
 
   augment "/srl-tools-system:system" {
-    if-feature "srl-feat:future-0-0";
+    if-feature "srl-feat:netconf";
+    srl-ext:first-released "24.7.1";
     uses tools-netconf-server-top;
   }
 }

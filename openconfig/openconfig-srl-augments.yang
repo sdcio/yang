@@ -12,9 +12,19 @@ module openconfig-srl-augments {
   description
     "SRL augments to the OpenConfig models";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2022-03-31 {
     description
       "SRLinux 22.3.1";
+  }
+
+  // copy of srl_nokia-extensions:no-globbing (yang/modules/models/srl_nokia/models/common/srl_nokia-extensions.yang)
+  extension no-globbing {
+    description
+      "Disables globbing for this leaf (useful for fields defining regex patterns)";
   }
 
   grouping lag-augments

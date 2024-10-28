@@ -1,9 +1,8 @@
 Do not change the following .yang files:
 
-ietf-datastores@2017-08-17.yang
+ietf-datastores@2018-02-14.yang
 ietf-inet-types@2013-07-15.yang
-ietf-yang-library@2016-06-21.yang
-ietf-yang-library@2017-08-17.yang
+ietf-yang-library@2019-01-04.yang
 ietf-yang-metadata@2016-08-05.yang
 ietf-yang-types@2013-07-15.yang
 yang@2017-02-20.yang

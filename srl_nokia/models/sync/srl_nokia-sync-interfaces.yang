@@ -16,6 +16,10 @@ module srl_nokia-sync-interfaces {
     "Nokia SR Linux Support
      Web: <http://www.nokia.com>";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -48,6 +52,18 @@ module srl_nokia-sync-interfaces {
   grouping specific-gnss-info {
     description
       "This struct containing all attributes for a specific gnss instance in the node";
+    leaf admin-state {
+      type srl_nokia-comm:admin-state;
+      default "disable";
+      description
+        "Configure the administrative state of the GNSS port";
+    }
+    leaf oper-state {
+      config false;
+      type srl_nokia-comm:oper-state;
+      description
+        "Operational state of the GNSS port";
+    }
     leaf antenna-cable-delay {
       type uint16 {
         range "0..1000";
@@ -240,12 +256,6 @@ module srl_nokia-sync-interfaces {
   grouping gnss-interface-top {
     description
       "This struct containing all attributes for the GNSS reference";
-    leaf admin-state {
-      type srl_nokia-comm:admin-state;
-      default "disable";
-      description
-        "Configure the administrative state of the GNSS port";
-    }
     container constellation {
       description
         "Selects which constellations to be used for GNSS";
@@ -259,18 +269,26 @@ module srl_nokia-sync-interfaces {
         default "false";
       }
     }
-    container gnss-a {
-      uses specific-gnss-info;
+    list receiver {
+      key "gnss-id";
       description
-        "Specific configuration and states of a specific receiver
-
-          This may be the sole GNSS receiver or GNSS-A receiver in routers with redundant CPMs";
-    }
-    container gnss-b {
-      if-feature "srl_nokia-feat:future-0-0";
+        "Specific configuration and states of a specific receiver";
+      leaf gnss-id {
+        type enumeration {
+          enum gnss-a {
+            value 1;
+            description
+              "This may be the sole GNSS receiver or GNSS-A receiver in routers with redundant CPMs";
+          }
+          enum gnss-b {
+            if-feature "srl_nokia-feat:sync-gnss-redundant";
+            value 2;
+            description
+              "Specific configuration and states of GNSS-B receiver in routers with redundant CPMs";
+          }
+        }
+      }
       uses specific-gnss-info;
-      description
-        "Specific configuration and states of GNSS-B receiver in routers with redundant CPMs";
     }
   }
 

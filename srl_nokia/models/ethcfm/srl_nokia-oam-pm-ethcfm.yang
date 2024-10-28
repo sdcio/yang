@@ -34,6 +34,10 @@ module srl_nokia-oam-pm-ethcfm {
     "This YANG module contains the management data definitions for the
      Ethernet CFM Performance Monitoring.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -212,9 +216,11 @@ module srl_nokia-oam-pm-ethcfm {
               container statistics {
                 uses srl_nokia-oam-pm:mi-general-loss-statistics;
                 container forward {
+                  uses srl_nokia-oam-pm:mi-forward-loss;
                   uses srl_nokia-oam-pm:mi-directional-loss-statistics;
                 }
                 container backward {
+                  uses srl_nokia-oam-pm:mi-backward-loss;
                   uses srl_nokia-oam-pm:mi-directional-loss-statistics;
                 }
               }

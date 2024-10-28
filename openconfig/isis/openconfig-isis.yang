@@ -54,45 +54,60 @@ module openconfig-isis {
             +-> { levels config }
             +-> { level adjacencies }";
 
-  oc-ext:openconfig-version "1.6.0";
+  oc-ext:openconfig-version "1.6.2";
 
-    revision "2023-05-01" {
-        description
-          "Add ISIS total-lsps counter.";
-        reference
-          "1.6.0";
-    }
+  revision "2024-02-20" {
+    description
+      "Fix typo in RFC reference for adjacency-state.";
+    reference
+      "1.6.2";
+  }
 
-    revision "2023-04-25" {
-        description
-          "Clarify use of the interface-ref type.";
-        reference
-          "1.5.1";
-    }
+  revision "2023-11-01" {
+    description
+      "Refactor apply policy to separate default policy in it's own common
+       set of groupings";
+    reference
+      "1.6.1";
+  }
 
-    revision "2023-03-27" {
-        description
-          "Add weighted ecmp.";
-        reference
-          "1.5.0";
-    }
+  revision "2023-05-01" {
+    description
+      "Add ISIS total-lsps counter.";
+    reference
+      "1.6.0";
+  }
 
-    revision "2023-03-20" {
-        description
-          "Per-level global enabled configuration default false re-added to keep
-           backward compatibility.";
-        reference
-          "1.4.1";
-    }
+  revision "2023-04-25" {
+    description
+      "Clarify use of the interface-ref type.";
+    reference
+      "1.5.1";
+  }
 
-    revision "2023-02-22" {
-        description
-          "Deprecate the instance leaf, and add a new instance-id leaf
-           that indicates the value to be used in the Instance Identifier
-           TLV.";
-        reference
-          "1.4.0";
-    }
+  revision "2023-03-27" {
+    description
+      "Add weighted ecmp.";
+    reference
+      "1.5.0";
+  }
+
+  revision "2023-03-20" {
+    description
+      "Per-level global enabled configuration default false re-added to keep
+       backward compatibility.";
+    reference
+      "1.4.1";
+  }
+
+  revision "2023-02-22" {
+    description
+      "Deprecate the instance leaf, and add a new instance-id leaf
+       that indicates the value to be used in the Instance Identifier
+       TLV.";
+    reference
+      "1.4.0";
+  }
 
   revision "2023-01-25" {
     description
@@ -250,23 +265,23 @@ module openconfig-isis {
       default 0;
       description
           "ISIS Instance. This leaf has been deprecated. The instance name
-               is specified within the
-               /network-instances/network-instance/protocols/protocol/config/name
-               leaf (list key). If a user requires a specific instance identifier
-               used in the Instance Identifier TLV to be configured the instance-id
-               leaf is used.";
-            status deprecated;
+         is specified within the
+         /network-instances/network-instance/protocols/protocol/config/name
+         leaf (list key). If a user requires a specific instance identifier
+         used in the Instance Identifier TLV to be configured the instance-id
+         leaf is used.";
+      status deprecated;
     }
 
     leaf instance-id {
-            type uint16;
-            description
-              "When specified, this leaf explicitly indicates the instance identifier
-               that is to be used for the IS-IS instance. The value should be included
-               in the Instance Identifier (IID) TLV.";
-            reference
-              "RFC6822: IS-IS Multi-Instance";
-        }
+      type uint16;
+      description
+        "When specified, this leaf explicitly indicates the instance identifier
+         that is to be used for the IS-IS instance. The value should be included
+         in the Instance Identifier (IID) TLV.";
+      reference
+        "RFC6822: IS-IS Multi-Instance";
+    }
 
 
     leaf-list net {
@@ -302,14 +317,14 @@ module openconfig-isis {
     }
 
     leaf weighted-ecmp {
-            type boolean;
-            default "false";
-            description
-              "When set to true, all eligible multipath IS-IS routes associated with
-               the instance are programmed to use weighted ECMP. An IS-IS route is
-               eligible for weighted ECMP if all the next-hop interfaces in the
-               multipath set have a load-balancing-weight other than 'none'.";
-        }
+      type boolean;
+      default "false";
+      description
+        "When set to true, all eligible multipath IS-IS routes associated with
+         the instance are programmed to use weighted ECMP. An IS-IS route is
+         eligible for weighted ECMP if all the next-hop interfaces in the
+         multipath set have a load-balancing-weight other than 'none'.";
+    }
 
     leaf poi-tlv {
       type boolean;
@@ -868,33 +883,33 @@ module openconfig-isis {
   }
 
   grouping isis-interface-weighted-ecmp-config {
-        description
-          "This grouping defines ISIS weighted ECMP configuration";
+    description
+      "This grouping defines ISIS weighted ECMP configuration";
 
-        leaf load-balancing-weight {
-            description
-              "The load-balancing weight of the interface, which applies when
-               weighted ECMP is enabled and the interface is part of a multipath set.";
-            type union {
-                type uint32 {
-                    range "1..4294967295";
-                }
-                type enumeration {
-                    enum "auto" {
-                        description
-                          "Load-balancing weight is based on the bandwidth of
-                           the parent interface (port or LAG)";
-                    }
-                    enum "none" {
-                        description
-                          "The interface should not participate in weighted
-                           ECMP";
-                    }
-                }
-            }
-            default "auto";
+    leaf load-balancing-weight {
+      description
+        "The load-balancing weight of the interface, which applies when
+         weighted ECMP is enabled and the interface is part of a multipath set.";
+      type union {
+        type uint32 {
+          range "1..4294967295";
         }
+        type enumeration {
+          enum "auto" {
+              description
+              "Load-balancing weight is based on the bandwidth of
+               the parent interface (port or LAG)";
+          }
+          enum "none" {
+              description
+              "The interface should not participate in weighted
+               ECMP";
+          }
+        }
+      }
+      default "auto";
     }
+  }
 
   grouping isis-transport-config {
     description
@@ -986,6 +1001,7 @@ module openconfig-isis {
       "Policy governing the propagation of prefixes between levels.";
 
     uses oc-rpol:apply-policy-import-config;
+    uses oc-rpol:default-policy-import-config;
   }
 
   grouping isis-mpls-config {
@@ -1265,11 +1281,11 @@ module openconfig-isis {
 
       description
           "This list contains ISIS interfaces.
-               
-               The interface referenced is based on the interface and
-               subinterface leaves within the interface-ref container -
-               which reference an entry in the /interfaces/interface list -
-               and should not rely on the value of the list key.";
+         
+         The interface referenced is based on the interface and
+         subinterface leaves within the interface-ref container -
+         which reference an entry in the /interfaces/interface list -
+         and should not rely on the value of the list key.";
 
       leaf interface-id {
         type leafref {
@@ -1358,22 +1374,22 @@ module openconfig-isis {
     }
 
     container weighted-ecmp {
-            description
-              "This container defines ISIS interface weighted ECMP options";
+      description
+        "This container defines ISIS interface weighted ECMP options";
 
-            container config {
-                description
-                  "Configuration parameters relating to weighted ecmp";
-                uses isis-interface-weighted-ecmp-config;
-            }
+      container config {
+        description
+          "Configuration parameters relating to weighted ecmp";
+        uses isis-interface-weighted-ecmp-config;
+      }
 
-            container state {
-                config false;
-                description
-                  "This container defines state information for weighted ecmp";
-                uses isis-interface-weighted-ecmp-config;
-            }
-        }
+      container state {
+        config false;
+        description
+          "This container defines state information for weighted ecmp";
+        uses isis-interface-weighted-ecmp-config;
+      }
+    }
 
     uses oc-bfd:bfd-enable;
     container bfd {
@@ -1828,7 +1844,8 @@ module openconfig-isis {
       type oc-isis-types:isis-interface-adj-state;
       description
         "P2P 3-way ISIS adjacency state(up, down, init, failed).";
-      reference "RFC4303. TLV 240.";
+      reference
+        "RFC5303: TLV 240.";
     }
 
     leaf up-timestamp {
@@ -2051,10 +2068,10 @@ module openconfig-isis {
       "IS-IS counters that are relevant to the system IS-IS context.";
 
     leaf total-lsps {
-            type oc-yang:counter32;
-            description
-              "Number of LSPs in the database at the system level.";
-        }
+      type oc-yang:counter32;
+      description
+        "Number of LSPs in the database at the system level.";
+    }
 
     leaf corrupted-lsps {
       type oc-yang:counter32;

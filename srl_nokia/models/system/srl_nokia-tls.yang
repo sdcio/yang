@@ -9,6 +9,9 @@ module srl_nokia-tls {
   import srl_nokia-common {
     prefix srl-comm;
   }
+  import srl_nokia-features {
+    prefix srl_nokia-feat;
+  }
   import srl_nokia-extensions {
     prefix srl-ext;
   }
@@ -21,6 +24,10 @@ module srl_nokia-tls {
   description
     "This module defines TLS configuration";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2023-10-31 {
     description
       "SRLinux 23.10.1";
@@ -261,7 +268,6 @@ module srl_nokia-tls {
           "Name of the TLS server-profile";
       }
       leaf key {
-        mandatory true;
         srl-ext:show-importance "low";
         type string {
           srl-ext:generated-class-name "SecretKey";
@@ -273,13 +279,33 @@ module srl_nokia-tls {
            The value is hashed, and only the hashed value is kept";
       }
       leaf certificate {
-        mandatory true;
         srl-ext:show-importance "low";
         type string;
         description
           "Base64 encoded certificate to use with the private key
 
            This includes the '-----BEGIN CERTIFICATE-----' and '-----END CERTIFICATE-----' header and footer";
+      }
+      leaf use-tpm-devid {
+        if-feature "srl_nokia-feat:tpm-idevid";
+        type enumeration {
+          enum idevid {
+            value 1;
+            description
+              "The TPM iDevID key and certificate is used";
+          }
+          enum oidevid {
+            if-feature "srl_nokia-feat:tpm-oidevid";
+            value 2;
+            description
+              "The TPM iDevID key and oIDevID certificate is used";
+          }
+        }
+        must 'not (../key or ../certificate)' {
+          error-message "The server profile can only be configured with idevid or oidevid if the local key and certificate are not configured";
+        }
+        description
+          "Defines if the server profile key and certificate uses the TPM idevid or oidevid";
       }
       leaf authenticate-client {
         default "false";

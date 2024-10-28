@@ -24,6 +24,10 @@ module srl_nokia-traffic-engineering {
   description
     "Configuration and state related to the use and propagation of TE information.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -210,7 +214,7 @@ module srl_nokia-traffic-engineering {
             }
             description
               "Reference to a base interface, for example a port or LAG";
-            must '../subinterface' {
+            must '../subinterface >= 0' {
               error-message "subinterface must be configured when interface is set";
             }
             must "not((. = 'system0') or (starts-with(., 'lo')))" {

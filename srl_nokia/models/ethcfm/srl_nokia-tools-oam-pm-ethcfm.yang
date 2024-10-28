@@ -18,6 +18,10 @@ module srl_nokia-tools-oam-pm-ethcfm {
   description
     "This module defines the tools commands available for OAM-PM ETHCFM sessions";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -49,7 +53,6 @@ module srl_nokia-tools-oam-pm-ethcfm {
   augment "/srl_nokia-tools-oam:oam/srl_nokia-tools-oam:performance-monitoring" {
     if-feature "srl_nokia-feat:oam-pm-ethcfm";
     container ethcfm {
-      presence "Tools commands to affect EthCFM performance monitoring tests and results";
       description
         "OAM-PM ETH-CFM on-demand tools";
       list session {

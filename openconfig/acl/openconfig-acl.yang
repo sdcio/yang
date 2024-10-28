@@ -287,7 +287,7 @@ module openconfig-acl {
       type identityref {
         base FORWARDING_ACTION;
       }
-      mandatory true;
+      //mandatory true; SRL deviation
       description
         "Specifies the forwarding action.  One forwarding action
         must be specified for each ACL entry";

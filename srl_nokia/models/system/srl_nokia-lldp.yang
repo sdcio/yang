@@ -21,6 +21,9 @@ module srl_nokia-lldp {
   import srl_nokia-features {
     prefix srl-feat;
   }
+  import srl_nokia-extensions {
+    prefix srl-ext;
+  }
 
   organization
     "Nokia";
@@ -31,6 +34,10 @@ module srl_nokia-lldp {
     "This module defines configuration and operational state data
      for the LLDP protocol.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2022-03-31 {
     description
       "SRLinux 22.3.1";
@@ -541,6 +548,7 @@ module srl_nokia-lldp {
         "Details the operational state of LLDP on the interface";
     }
     container statistics {
+      srl-ext:delivery-node-override "true";
       presence "State LLDP counters";
       config false;
       description

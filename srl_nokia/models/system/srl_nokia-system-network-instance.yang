@@ -33,6 +33,10 @@ module srl_nokia-system-network-instance {
   description
     "This yang file models configuration and state of the system network-instance.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2021-06-30 {
     description
       "SRLinux 21.6.1";
@@ -52,7 +56,7 @@ module srl_nokia-system-network-instance {
           "The routing protocols that are enabled for this
            network-instance.";
         container evpn {
-          if-feature "srl_nokia-feat:evpn";
+          if-feature "srl_nokia-feat:evpn-mh";
           presence "System network-instance evpn configuration and state.";
         }
       }

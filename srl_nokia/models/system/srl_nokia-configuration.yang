@@ -15,6 +15,9 @@ module srl_nokia-configuration {
   import srl_nokia-features {
     prefix srl-feat;
   }
+  import srl_nokia-gnsi-pathz {
+    prefix srl-gnsi-pathz;
+  }
 
   organization
     "Nokia";
@@ -24,6 +27,10 @@ module srl_nokia-configuration {
   description
     "This module defines configuration and operational state data related to the system configuration.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2023-10-31 {
     description
       "SRLinux 23.10.1";
@@ -250,6 +257,13 @@ module srl_nokia-configuration {
       description
         "Configuration checkpoint will be automatically created after every successful commit (if set to true).";
     }
+    leaf auto-save {
+      srl-ext:first-released "24.7.1";
+      type boolean;
+      default "false";
+      description
+        "Configuration save will be automatically done after every successful commit (if set to true).";
+    }
   }
 
   grouping configuration-state-checkpoints-top {
@@ -325,6 +339,9 @@ module srl_nokia-configuration {
       uses configuration-state-sessions-top;
       uses configuration-state-candidates-top;
       uses configuration-state-commits-top;
+      uses srl-gnsi-pathz:pathz-top {
+        if-feature "srl-feat:gnsi-pathz";
+      }
     }
   }
 

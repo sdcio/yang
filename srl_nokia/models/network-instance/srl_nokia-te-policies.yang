@@ -12,6 +12,9 @@ module srl_nokia-te-policies {
   import srl_nokia-system {
     prefix srl_nokia-system;
   }
+  import srl_nokia-extensions {
+    prefix srl_nokia-ext;
+  }
   import srl_nokia-mpls-label-management {
     prefix srl_nokia-mplslbl;
   }
@@ -36,6 +39,10 @@ module srl_nokia-te-policies {
   description
     "Configuration and state for traffic engineering policies.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -397,6 +404,9 @@ module srl_nokia-te-policies {
     container traffic-engineering-policies {
       if-feature "srl_nokia-feat:te-policies";
       presence "Configure traffic engineering policies";
+      must "(../srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
+        error-message "traffic-engineering-policies are only allowed on network-instance of type default";
+      }
       description
         "Container with traffic engineering policies";
       uses binding-sid-label-blocks;
@@ -459,7 +469,7 @@ module srl_nokia-te-policies {
               error-message "ip-address must be configured in a ip-hop";
             }
             leaf ip-address {
-              type srl_nokia-comm:ip-address;
+              type srl_nokia-comm:ip-address-unicast-without-local;
               description
                 "An IPv4 or IPv6 address that is a hop to be visited on the way to the destination";
             }
@@ -572,7 +582,7 @@ module srl_nokia-te-policies {
         mandatory true;
         description
           "Destination of the TE policy";
-        type srl_nokia-comm:ip-address-excluding-all-zero;
+        type srl_nokia-comm:ip-address-unicast-without-local;
       }
       leaf distinguisher {
         if-feature "srl_nokia-feat:segment-routing-colored-te-policies";
@@ -607,12 +617,22 @@ module srl_nokia-te-policies {
         type leafref {
           path "/srl_nokia-routing-pol:routing-policy/srl_nokia-routing-pol:tag-set/srl_nokia-routing-pol:name";
         }
+        must "../policy-type = 'sr-mpls-uncolored'" {
+          error-message "Tag set is specific to sr-mpls-uncolored TE policies";
+        }
       }
       leaf re-optimization-timer {
         description
           "Re-optimizaion timer for the TE policy";
-        type uint32 {
-          range "1..360";
+        type union {
+          type uint32 {
+            range "30..10800";
+          }
+          type enumeration {
+            enum disable {
+              value -1;
+            }
+          }
         }
         units "minutes";
         default "30";
@@ -645,6 +665,7 @@ module srl_nokia-te-policies {
         default "30";
       }
       container ingress-statistics {
+        if-feature "srl_nokia-feat:te-policy-statistics";
         description
           "Enable the ingress-statistics context";
         leaf admin-state {
@@ -655,6 +676,7 @@ module srl_nokia-te-policies {
         }
       }
       container egress-statistics {
+        if-feature "srl_nokia-feat:te-policy-statistics";
         description
           "Enable the egress-statistics context";
         leaf admin-state {
@@ -679,6 +701,7 @@ module srl_nokia-te-policies {
       uses te-policy-state;
       uses segment-list;
       container statistics {
+        if-feature "srl_nokia-feat:te-policy-statistics";
         config false;
         leaf ingress-packets {
           type srl_nokia-comm:zero-based-counter64;
@@ -817,15 +840,17 @@ module srl_nokia-te-policies {
           type uint8 {
             range "0..7";
           }
-          default "0";
+          default "7";
         }
       }
       leaf pce-control {
+        if-feature "srl_nokia-feat:pcep-pcc";
         description
           "Set to true for a PCE controlled segment-list";
         type boolean;
       }
       leaf pce-report {
+        if-feature "srl_nokia-feat:pcep-pcc";
         description
           "seto to true to enable reporting of the segment-list to the PCE";
         type boolean;
@@ -855,9 +880,10 @@ module srl_nokia-te-policies {
             }
             default "igp";
           }
-          leaf latency-metric-limit {
+          leaf delay-metric-limit {
+            if-feature "srl_nokia-feat:te-policy-delay-metric-limit";
             description
-              "The maximum latency for the segment-list";
+              "The maximum acceptable delay for the segment-list";
             type uint32;
             default "0";
           }
@@ -878,13 +904,13 @@ module srl_nokia-te-policies {
               type uint8 {
                 range "1..14";
               }
-              default "8";
-            }
-            leaf additional-frr-segment-limit {
-              description
-                "The maximum number of additional segments used for FRR";
-              type uint8 {
-                range "0..3";
+              must '. <= 5' {
+                error-message "Valid range for segment-depth is 1..5 labels ";
+                srl_nokia-ext:if-feature "srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp";
+              }
+              must '. <= 8' {
+                error-message "Valid range for segment-depth is 1..8 labels ";
+                srl_nokia-ext:if-feature "srl_nokia-feat:fpcx";
               }
             }
           }
@@ -893,13 +919,13 @@ module srl_nokia-te-policies {
               "Protection offered for local CSPF computed segment-lists";
             type enumeration {
               enum none {
-                value 0;
-              }
-              enum preferred {
                 value 1;
               }
-              enum mandated {
+              enum preferred {
                 value 2;
+              }
+              enum mandated {
+                value 3;
               }
             }
             default "preferred";
@@ -913,10 +939,11 @@ module srl_nokia-te-policies {
           leaf-list exclude-hop {
             description
               "Excluded IP addresses from path computation";
-            type srl_nokia-comm:ip-address-excluding-all-zero;
+            type srl_nokia-comm:ip-address-unicast-without-local;
             max-elements 10;
           }
           leaf-list exclude-srlg {
+            if-feature "srl_nokia-feat:te-policy-exclude-srlg";
             max-elements 16;
             description
               "Excluded SRLGs during path computation";
@@ -956,7 +983,7 @@ module srl_nokia-te-policies {
               "Color associated with the SR MPLS (colored) policy";
           }
           leaf endpoint {
-            type srl_nokia-comm:ip-address;
+            type srl_nokia-comm:ip-address-unicast-without-local;
             description
               "Policy endpoint IP address";
           }
@@ -981,12 +1008,12 @@ module srl_nokia-te-policies {
             type protocol-origin-type;
           }
           leaf endpoint {
-            type srl_nokia-comm:ip-address;
+            type srl_nokia-comm:ip-address-unicast-without-local;
             description
               "Uncolored Traffic Engineering Policy endpoint IP address";
           }
           leaf head-end {
-            type srl_nokia-comm:ip-address;
+            type srl_nokia-comm:ip-address-unicast-without-local;
             description
               "Uncolored Traffic Engineering Policy headend IP address";
           }
@@ -1037,18 +1064,21 @@ module srl_nokia-te-policies {
               "Uncolored Traffic Engineering Policy active segment-list index";
             type uint32;
           }
-          leaf installation-type {
-            type enumeration {
-              enum tunnel;
-              enum swap;
-            }
+          container maintenance {
+            if-feature "srl_nokia-feat:maintenance-policies";
             description
-              "TE Policy installation-type definition. If tunnel, TE policy is installed in Tunnel table (LTN) and can be used by local services and IP shortcuts. If installarion-type is swap, it's installed in iLM as a swap entry";
+              "Maintenance context for TE Policy, hold and wait timers, sBFD, revertive behavior and alike available under this context";
+            leaf maintenance-policy {
+              description
+                "The maintenance policy to use with the TE policy";
+              type srl_nokia-comm:name;
+            }
           }
           uses te-policy-state;
           uses dynamic-segment-lists;
         }
       }
+      uses te-policies-state;
     }
   }
 
@@ -1077,7 +1107,7 @@ module srl_nokia-te-policies {
       leaf discriminator {
         type uint32;
         description
-          "Candidate path distinguisher";
+          "Candidate path discriminator";
       }
       leaf preference {
         type uint32 {
@@ -1143,36 +1173,6 @@ module srl_nokia-te-policies {
       container te-constraints {
         description
           "Traffic Engineering constraints for dynamic segment-lists";
-        leaf hop-limit {
-          description
-            "Hop limit contraint used for computation of the Segment List";
-          type uint8;
-        }
-        leaf label-stack-reduction {
-          description
-            "If label stack reduction is enabled for the given Segment List";
-          type boolean;
-        }
-        leaf exclude-srlg {
-          description
-            "SRLG links excluded during path computation for the given Segment List";
-          type string;
-        }
-        leaf local-sr-protection {
-          description
-            "If local SR protection is requested for the given Segment List";
-          type boolean;
-        }
-        leaf exclude-hop {
-          description
-            "Excluded IP addresses from path computation for the given Segment List";
-          type srl_nokia-comm:ip-address-excluding-all-zero;
-        }
-        leaf segment-depth {
-          description
-            "Number of segments pushed while instantiating the Segment List";
-          type uint8;
-        }
         leaf metric-type {
           description
             "Metric type used for segment-list computation";
@@ -1185,10 +1185,61 @@ module srl_nokia-te-policies {
             }
           }
         }
+        leaf delay-metric-limit {
+          if-feature "srl_nokia-feat:te-policy-delay-metric-limit";
+          description
+            "The maximum latency for the segment-list";
+          type uint32;
+        }
+        leaf hop-limit {
+          description
+            "Hop limit contraint used for computation of the Segment List";
+          type uint8;
+        }
+        leaf local-sr-protection {
+          description
+            "Protection offered for local CSPF computed segment-lists";
+          type enumeration {
+            enum none {
+              value 1;
+            }
+            enum preferred {
+              value 2;
+            }
+            enum mandated {
+              value 3;
+            }
+          }
+        }
+        leaf label-stack-reduction {
+          description
+            "If label stack reduction is enabled for the given Segment List";
+          type boolean;
+        }
         leaf secondary-srlg {
           description
             "If SRLG constraints are taken into account while computing Secondary Segment List";
           type boolean;
+        }
+        leaf-list exclude-hop {
+          description
+            "Excluded IP addresses from path computation for the given Segment List";
+          type srl_nokia-comm:ip-address-unicast-without-local;
+        }
+        leaf-list exclude-srlg {
+          if-feature "srl_nokia-feat:te-policy-exclude-srlg";
+          description
+            "SRLG links excluded during path computation for the given Segment List";
+          type string;
+        }
+        container segment-depth {
+          description
+            "Configuration for the maximum number of SIDs/segments";
+          leaf segment-limit {
+            description
+              "The maximum number of segments in the segment-list";
+            type uint8;
+          }
         }
       }
     }
@@ -1197,6 +1248,7 @@ module srl_nokia-te-policies {
 
   grouping last-pce-update {
     container last-pce-update {
+      if-feature "srl_nokia-feat:pcep-pcc";
       leaf time {
         config false;
         description
@@ -1215,10 +1267,10 @@ module srl_nokia-te-policies {
           "Indicates whether the last update was successful or failed.";
         type enumeration {
           enum success {
-            value 0;
+            value 1;
           }
           enum failure {
-            value 1;
+            value 2;
           }
         }
       }
@@ -1239,15 +1291,44 @@ module srl_nokia-te-policies {
           "The current state of the BFD session on the LSP path.";
         type enumeration {
           enum not-applicable {
-            value 0;
-          }
-          enum down {
             value 1;
           }
-          enum up {
+          enum down {
             value 2;
           }
+          enum up {
+            value 3;
+          }
         }
+      }
+      leaf hold-down-timer-expiry {
+        config false;
+        type srl_nokia-comm:date-and-time-delta;
+        description
+          "Time remaining on seamless-bfd hold down timer";
+      }
+      leaf hold-down-timer {
+        config false;
+        type uint16;
+        units "seconds";
+        description
+          "Specifies a hold-down timer value when seamless-bfd is enabled
+
+           The timer is started when the number of S-BFD sessions that are up drops below the threshold. The TE-policy path is not considered to be up again until the hold-down timer has expired and the number of S-BFD sessions that are up equals or exceeds the threshold.
+           A grace preiod after session down such that sBFD session flaps does not impact active path.
+
+           The default is 3 seconds.";
+      }
+      leaf bfd-wait-for-up-timer {
+        config false;
+        type uint16;
+        units "seconds";
+        description
+          "Specifies a wait-for-up timer value when seamless-bfd is enabled
+
+           This timer takes effect if BFD does not come up, or BFD goes from up to down. The timer is started when BFD is first enabled on a segment-list or BFD transitions from up to down. When the timer expires if BFD is not yet come up, then the path is torn down by removing it from the TTM and the PI and the retry timer is started.
+
+           The default is 3 seconds.";
       }
       leaf bfd-wait-for-up-expiry {
         config false;
@@ -1255,18 +1336,11 @@ module srl_nokia-te-policies {
           "The time in seconds left to wait for the bfd session to be up.";
         type srl_nokia-comm:date-and-time-delta;
       }
-      leaf session-request-id {
-        config false;
-        description
-          "Id used for BFD session request.";
-        type uint32;
-      }
     }
   }
 
   grouping computed-segments {
     container computed-segments {
-      config false;
       list segment {
         key "segment-index";
         leaf segment-index {
@@ -1294,7 +1368,7 @@ module srl_nokia-te-policies {
           config false;
           description
             "IP Address for this hop.";
-          type srl_nokia-comm:ip-address;
+          type srl_nokia-comm:ip-address-unicast-without-local;
         }
         leaf is-loose {
           config false;
@@ -1462,24 +1536,6 @@ module srl_nokia-te-policies {
         "True if an entropy label is being inserted after the labels of this segment list";
       type boolean;
     }
-    leaf hold-down-timer-expiry {
-      config false;
-      type srl_nokia-comm:date-and-time-delta;
-      description
-        "Time remaining on seamless-bfd hold down timer";
-    }
-    leaf wait-for-up-timer-expiry {
-      config false;
-      type srl_nokia-comm:date-and-time-delta;
-      description
-        "Time remanining on seamless-bfd wait timer before state is changed to up";
-    }
-    leaf revert-timer-expiry {
-      config false;
-      type srl_nokia-comm:date-and-time-delta;
-      description
-        "Time remanining on revert-timer";
-    }
   }
 
   grouping segment-list-state {
@@ -1501,11 +1557,13 @@ module srl_nokia-te-policies {
          Standby is programmed in datapath, consumes resources and is ready for a failover any time. Secondary is programmed upon failure of the previous active";
     }
     leaf pce-report {
+      if-feature "srl_nokia-feat:pcep-pcc";
       description
         "PCE Reporting for Traffic Engineering Policy Segment-list";
       type boolean;
     }
     leaf pce-control {
+      if-feature "srl_nokia-feat:pcep-pcc";
       description
         "PCE Control status for Traffic Engineering Policy Segment-list";
       type boolean;
@@ -1524,6 +1582,16 @@ module srl_nokia-te-policies {
       description
         "Metric of a given Segment List";
       type uint32;
+    }
+    leaf igp-metric {
+      type uint32;
+      description
+        "IGP metric of given Segment List";
+    }
+    leaf te-metric {
+      type uint32;
+      description
+        "TE metric of given Segment List";
     }
     leaf lsp-id {
       config false;
@@ -1567,9 +1635,26 @@ module srl_nokia-te-policies {
       description
         "Number of path computation requests made for the segment-list";
     }
+    leaf revert-timer-expiry {
+      config false;
+      type srl_nokia-comm:date-and-time-delta;
+      description
+        "Time remanining on revert-timer";
+    }
+    leaf revert-timer {
+      type uint32;
+      units "seconds";
+      description
+        "Revert timer for the segment-list.
+
+         Timer till a revert to primary/best path after it is recovered from a failure. In case of uncolored te-policy, applies to primary segment-list and in case of colored te-policy applies to best candidate path.
+
+         The default is 0 seconds.";
+    }
     uses bfd-state;
     uses dynamic-state;
     uses mbb-state;
+    uses last-pce-update;
   }
 
   grouping mbb-state {
@@ -1585,28 +1670,31 @@ module srl_nokia-te-policies {
             "Indicates the type of the make-before-break (MBB) that is in progress.";
           type enumeration {
             enum none {
-              value 0;
-            }
-            enum timer-based-reoptimization {
               value 1;
             }
-            enum manual-resignal {
+            enum timer-based-reoptimization {
               value 2;
             }
-            enum pce-update {
+            enum manual-resignal {
               value 3;
+            }
+            enum pce-update {
+              value 4;
             }
           }
         }
         leaf state {
           description
-            "Indicates whether the last make-before-break was successful or failed.";
+            "Indicates whether the last make-before-break was successful, failed or was not required as path was already optimal.";
           type enumeration {
             enum success {
-              value 0;
+              value 1;
             }
             enum failure {
-              value 1;
+              value 2;
+            }
+            enum path-optimal {
+              value 3;
             }
           }
         }
@@ -1629,16 +1717,16 @@ module srl_nokia-te-policies {
             "Indicates the type of the make-before-break (MBB) that is in progress.";
           type enumeration {
             enum none {
-              value 0;
-            }
-            enum timer-based-reoptimization {
               value 1;
             }
-            enum manual-resignal {
+            enum timer-based-reoptimization {
               value 2;
             }
-            enum pce-update {
+            enum manual-resignal {
               value 3;
+            }
+            enum pce-update {
+              value 4;
             }
           }
         }
@@ -1648,6 +1736,21 @@ module srl_nokia-te-policies {
           type srl_nokia-comm:date-and-time-delta;
         }
       }
+    }
+  }
+
+  grouping te-policies-state {
+    leaf active-te-policies {
+      config false;
+      type uint32;
+      description
+        "Number of active Traffic Engineering Polices";
+    }
+    leaf total-te-policies {
+      config false;
+      type uint32;
+      description
+        "Number of total Traffic Engineering Policies (irrespective of the operational state)";
     }
   }
 

@@ -21,6 +21,10 @@ module srl_nokia-platform-tpm {
   description
     "This module defines operational state data related to TPMs";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -42,7 +46,7 @@ module srl_nokia-platform-tpm {
     container tpm {
       list control {
         description
-          "List of TPMs on system control modules with their corresponding status, supported algorithms, PCR Indexes per PCR Bank and certificates";
+          "TPM status, PCR indexes and certificates per control module";
         config false;
         key "slot";
         leaf slot {
@@ -75,7 +79,7 @@ module srl_nokia-platform-tpm {
         list tpm20-pcr-bank {
           key "tpm20-hash-algo";
           description
-            "Specifies the list of PCRs that may be extracted for a specific Hash Algorithm.
+            "Specifies the list of PCRs that may be extracted for a specific Hash Algorithm
              A TPM2.0 bank is a set of PCRs which are extended using a particular hash algorithm";
           reference
             "TPM2.0-Structures:

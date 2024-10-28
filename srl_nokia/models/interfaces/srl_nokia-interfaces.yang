@@ -36,6 +36,10 @@ module srl_nokia-interfaces {
      This model reuses data items defined in the IETF YANG model for
      interfaces described by RFC 7223";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -125,7 +129,7 @@ module srl_nokia-interfaces {
     if-feature "srl_nokia-feat:digital-coherent-optics";
     base transceiver-functional-type;
     description
-      "Indicates transciever supports digital coherent optics";
+      "Indicates transceiver supports digital coherent optics";
   }
 
   typedef port-oper-down-reason {
@@ -157,6 +161,7 @@ module srl_nokia-interfaces {
       enum cfm-ccm-defect;
       enum crc-monitor-fail-threshold;
       enum symbol-monitor-fail-threshold;
+      enum unsupported-num-channels-for-speed;
     }
   }
 
@@ -175,6 +180,7 @@ module srl_nokia-interfaces {
       enum missing-xdp-state;
       enum no-underlay-egress-next-hop-resources;
       enum cfm-ccm-defect;
+      enum no-irb-hardware-resources;
       enum other;
     }
   }
@@ -196,6 +202,8 @@ module srl_nokia-interfaces {
       enum unsupported-breakout;
       enum port-disabled;
       enum connector-transceiver-down;
+      enum unsupported-operational-mode;
+      enum no-tunable-config;
     }
   }
 
@@ -253,7 +261,7 @@ module srl_nokia-interfaces {
         if-feature "srl_nokia-feat:traffic-engineering";
         type union {
           type int32 {
-            range "0..2147483647";
+            range "1..16777215";
           }
           type enumeration {
             enum none {
@@ -317,6 +325,27 @@ module srl_nokia-interfaces {
         error-message "admin-state must be enable";
       }
     }
+    leaf num-physical-channels {
+      if-feature "srl_nokia-feat:num-physical-channels";
+      type uint8 {
+        range "1..8";
+      }
+      description
+        "Sets the number of lanes or physical channels assigned to this interface or to the set of interfaces within this breakout group
+
+         This leaf can be used to distinguish between transceivers that provide the same port-speed or breakout-configuration but using different PMAs.
+         For example, if a port supports two transceivers providing 100G optical signal but one uses CAUI4 and the other uses 100GAUI-2, then this leaf
+         can be set to 4 for the CAUI4 transceiver and 2 for the 100GAUI-2 transceiver.
+         Similarly, a transceiver that provides a breakout of 4 ports of 100G using 4 x 100GAUI2 would set this leaf to 8 but a transceiver using 4 x 100GAUI-1 would have this leaf set to 4.
+
+         If not set, then the default shall be as follows:
+            1 is used for 10G, 25G
+            2 is used for 50G
+            4 is used for 40G, 100G, 2x50G, 1x100G, 4x10G, 4x25G
+            6 is used for 3x100G (digital coherent optics)
+            8 is used for 200G, 400G, 800G, 2x100G, 4x100G, 8x50G
+        ";
+    }
     container breakout-mode {
       if-feature "srl_nokia-feat:port-breakout";
       presence "Configures the connector for breakout mode";
@@ -326,35 +355,68 @@ module srl_nokia-interfaces {
       description
         "Configuration of breakout options.
 
-         The 7220 D3 supports 4x10G and 4x25G breakout on ports 3-33.
-         The 7220 D3L supports 4x10G and 4x25G breakout on ports 1-31.
-         The 7220 H3 supports 4x10G, 2x100G/4x100G, and 2x200G breakout on ports 3-34.
-         The 7220 H4 supports 4x100G breakout on ports 1-64.
-         The 7220 D4 supports 4x100G breakout on ports 29-32.
-         The 7220 D4 supports 4x25G breakout on ports 9, 23-27, 29-32.
-         The 7220 D4 supports 4x10G breakout on ports 9, 23-27, 29-32.
-         The 7220 D5 supports 4x10G, 4x25G, and 2x100G/4x100G breakout on ports 1-32.
-         7250 IXR-6e/10e 36p QSFPDD IMM all port: 4x100G, 2x100G, 4x25G, and 4x10G";
+         7220 D3 ports 3-33: 4x10G and 4x25G
+         7220 D3L ports 1-31: 2x50G, 4x10G and 4x25G
+         7220 H3 ports 3-34: 4x10G, 2x100G/4x100G, and 2x200G
+         7220 H4 ports 1-64: 4x100G and 2x200G
+         7220 H4-32D ports 1-32: 4x100G and 2x200G
+         7220 D4 ports 29-32: 4x100G, 4x25G, and 4x10G
+         7220 D4 ports 9, 23-27: 4x25G and 4x10G
+         7220 D5 ports 1-32: 4x10G, 4x25G, 2x100G/4x100G, and 2x200G
+         7730 SXR-1d-32D QSFP28 ports 1-16, 21-32: 4x10G and 4x25G (Note 3)
+         7730 SXR-1d-32D QSFPDD ports 17-20: 4x100G, 3x100G (Note 1), 4x25G, and 4x10G
+         7730 SXR-1x-44S SFPDD ports 1-20, 23-42: No breakouts
+         7730 SXR-1x-44S QSFPDD ports 21,22,43,44: 4x100G, 3x100G (Note 1), 4x25G, and 4x10G
+         7250 IXR-6e/10e 36p QSFPDD IMM all ports: 4x100G, 2x100G, 4x25G, and 4x10G
+         7250 IXR-X1b QSFP28 ports 1-24: 4x25G, and 4x10G (Note 4)
+         7250 IXR-X1b QSFPDD ports 25-36: 4x100G, 3x100G (Note 1), 2x100G, 4x25G, and 4x10G
+         7250 IXR-X3b QSFPDD all ports: 4x100G, 3x100G (Note 1), 2x100G, 4x25G, and 4x10G
+         Note 1: 3x100G is only supported for Digital Coherent Optic transceivers
+
+         Note 3: Breakout and 40G is only supported on odd numbered ports.
+                 For the QSFP28 four port groupings [1-4], [5-8], [9-12], [13-16], [21-24], [25-28], and [29-32] if either of the odd numbered ports within a group is enabled and configured for 40G, 4x10G, or 4x25G,
+                 then the other odd numbered port in the same group may only be enabled if it is configured for one of 40G, 4x10G, or 4x25G (can differ between the odd ports) and neither of
+                 the two even numbered ports within the same group can be enabled.
+
+         Note 4: For the QSFP28 ports, the following port groups exist [n, n+1, n+2, n+3] for n = 1, 5, 9, 13, 17, 21.  Breakout for 4x25G or 4x10G is only supported on ports n+1 and n+3.
+                 If port n+1 within the group is configured for breakout and enabled, then port n cannot be enabled.
+                 In addition if port n+1 is configured for breakout and enabled and port n+3 is configured without breakout and enabled, then port n+2 may only be configured and enabled with the same speed as port n+3.
+                 If port n+3 within the group is configured for breakout and enabled, then port n+2 cannot be enabled.
+                 In addition if port n+3 is configured for breakout and enabled and port n+1 is configured without breakout and enabled, then port n may only be configured and enabled with the same speed as port n+1.
+
+         Port Groups and auto-configuration of port speed:
+          Manually configured breakout-mode takes precedence over the auto-configured port-speed.  This means that configuring a port within a port-group can have a side effect to take down an operational port that had its speed set based on the auto configuration feature.  If there is risk of mixing transceiver types within a port group, then it is recommended to always manually configure the ports";
       leaf num-breakout-ports {
         description
           "The number of breakout ports supported by this connector";
         type enumeration {
+          enum 1 {
+            if-feature "srl_nokia-feat:breakout-ports-1";
+          }
           enum 2 {
-            if-feature "srl_nokia-feat:platform-7220-d5 or srl_nokia-feat:platform-7220-h3 or srl_nokia-feat:platform-7250-ixr-e or srl_nokia-feat:platform-7250-ixr-x3b";
+            if-feature "srl_nokia-feat:breakout-ports-2";
           }
           enum 3 {
-            if-feature "(srl_nokia-feat:digital-coherent-optics and (srl_nokia-feat:platform-fx2-zq or srl_nokia-feat:platform-fx1-sdd))";
+            if-feature "srl_nokia-feat:breakout-ports-3";
           }
-          enum 4;
+          enum 4 {
+            if-feature "srl_nokia-feat:breakout-ports-4";
+          }
           enum 8 {
-            if-feature "srl_nokia-feat:disabled";
+            if-feature "srl_nokia-feat:breakout-ports-8";
           }
         }
-        must "not((. = '2') and not((../breakout-port-speed = '200G') or (../breakout-port-speed = '100G')))" {
-          error-message "invalid breakout-port-speed when num-breakout-ports is 2";
+        must "not((. = '1') and ../breakout-port-speed != '100G')" {
+          error-message "breakout-port-speed must be 100G when num-breakout-ports is 1";
         }
         must "not((. = '3') and ../breakout-port-speed != '100G')" {
           error-message "breakout-port-speed must be 100G when num-breakout-ports is 3";
+        }
+        must "not((. = '1') and ../../transceiver/functional-type != 'digital-coherent-optics')" {
+          error-message "transceiver functional-type must be digital-coherent-optics when breakout-port-speed is 100G and num-breakout-ports is 1";
+        }
+        must "not((. = '3') and ../../transceiver/functional-type != 'digital-coherent-optics')" {
+          error-message "transceiver functional-type must be digital-coherent-optics when breakout-port-speed is 100G and num-breakout-ports is 3";
         }
         must "not((. = '8') and ../breakout-port-speed != '50G')" {
           error-message "breakout-port-speed must be 50G when num-breakout-ports is 8";
@@ -366,19 +428,19 @@ module srl_nokia-interfaces {
           "The speed of each breakout port";
         type enumeration {
           enum 10G {
-            if-feature "srl_nokia-feat:platform-7220-d3 or srl_nokia-feat:platform-7220-d4 or srl_nokia-feat:platform-7220-d5 or srl_nokia-feat:platform-7220-h3 or srl_nokia-feat:platform-fx2-zq or srl_nokia-feat:platform-fx1-sdd or srl_nokia-feat:platform-7250-ixr-e or srl_nokia-feat:platform-7250-ixr-x3b";
+            if-feature "srl_nokia-feat:breakout-speed-10G";
           }
           enum 25G {
-            if-feature "srl_nokia-feat:platform-7220-d3 or srl_nokia-feat:platform-7220-d4 or srl_nokia-feat:platform-7220-d5 or srl_nokia-feat:platform-fx2-zq or srl_nokia-feat:platform-fx1-sdd or srl_nokia-feat:platform-7250-ixr-e or srl_nokia-feat:platform-7250-ixr-x3b or ((srl_nokia-feat:platform-7220-h3) and srl_nokia-feat:future-0-0)";
+            if-feature "srl_nokia-feat:breakout-speed-25G";
           }
           enum 50G {
-            if-feature "srl_nokia-feat:disabled";
+            if-feature "srl_nokia-feat:breakout-speed-50G";
           }
           enum 100G {
-            if-feature "srl_nokia-feat:platform-7220-h3 or srl_nokia-feat:platform-7220-h4 or srl_nokia-feat:platform-7220-d5 or srl_nokia-feat:platform-7220-d4 or srl_nokia-feat:platform-fx2-zq or srl_nokia-feat:platform-fx1-sdd or srl_nokia-feat:platform-7250-ixr-e or srl_nokia-feat:platform-7250-ixr-x3b";
+            if-feature "srl_nokia-feat:breakout-speed-100G";
           }
           enum 200G {
-            if-feature "srl_nokia-feat:platform-7220-h3";
+            if-feature "srl_nokia-feat:breakout-speed-200G";
           }
         }
         mandatory true;
@@ -393,17 +455,13 @@ module srl_nokia-interfaces {
         "Port MTU in bytes including ethernet overhead but excluding 4-bytes FCS
 
          If a transmitted packet exceeds this size it is dropped.
-
-         The default value for ethernet-x interfaces is taken from /system/mtu/default-port-mtu. For the mgmt0 and mgmt0-standby interfaces the default is 1514 bytes, but the value can be changed for each interface individually. Port MTU is not configurable for loopback interfaces.
-
+         The default value for ethernet-x interfaces is taken from /system/mtu/default-port-mtu. For the mgmt0 and mgmt0-standby interfaces the default is 1514 bytes, but the value can be changed for each interface individually.
+         Port MTU is not configurable for loopback interfaces or irb interfaces. For irb interfaces, if the size of the ip packets to be routed to a mac-vrf has to be restricted, the subinterface.ip-mtu should be configured instead.
          The max mtu for the mgmt0 and mgmt0-standby interfaces is 9216.
-
-         The 7220 IXR-D1, 7220 IXR-D2, 7220 IXR-D3, 7220 IXR-H2, and 7220 IXR-H3 systems support a maximum port MTU of 9412 bytes and minimum of 1500 bytes.
-
+         The 7220 IXR-D1, 7220 IXR-D2, 7220 IXR-D3, 7220 IXR-D4, 7220 IXR-D5, 7220 IXR-H2, 7220 IXR-H3, and 7220 IXR-H4 systems support a maximum port MTU of 9412 bytes and minimum of 1500 bytes.
          The VSRL system supports a maximum port MTU of 9500 and minimum of 1450 bytes.
-
+         The 7730 SXR systems support a maximum port MTU of 9408 bytes and minimum of 1500 bytes.
          All other systems support a maximum port MTU of 9500 and minimum of 1500 bytes.
-
          Each 7250 IXR IMM supports a maximum of 8 different port MTU values. 7220 IXR systems do not have any limit on the maximum number of different port MTU values.";
       must 'not(../breakout-mode)' {
         error-message "mtu not configurable when breakout-mode is enabled";
@@ -432,15 +490,54 @@ module srl_nokia-interfaces {
     }
   }
 
+  grouping sflow-sample-rate-config {
+    leaf ingress-sample-rate {
+      if-feature "srl_nokia-feat:sflow-interface-sampling";
+      type uint32 {
+        range "0..2000000";
+      }
+      must 'starts-with(../../srl_nokia-if:name, "ethernet")' {
+        error-message "sFlow Ingress packet sampling is supported only on ethernet interfaces.";
+      }
+      must 'not(../../breakout-mode)' {
+        error-message "sFlow Ingress packet sampling is not supported when breakout-mode is enabled.";
+      }
+      description
+        "Specify sFlow Ingress packet sample rate.
+         This value is the rate at which traffic will be sampled at a rate of 1:N received packets.";
+    }
+    leaf egress-sample-rate {
+      if-feature "srl_nokia-feat:sflow-interface-sampling";
+      type uint32 {
+        range "0..2000000";
+      }
+      must 'starts-with(../../srl_nokia-if:name, "ethernet")' {
+        error-message "sFlow Egress packet sampling is supported only on ethernet interfaces.";
+      }
+      must 'not(../../breakout-mode)' {
+        error-message "sFlow Egress packet sampling is not supported when breakout-mode is enabled.";
+      }
+      description
+        "Specify sFlow Egress packet sample rate.
+         This value is the rate at which traffic will be sampled at a rate of 1:N received packets.";
+    }
+  }
+
   grouping interface-sflow-config {
     description
       "Container for sFlow configuration applied at the interface level";
     container sflow {
+      if-feature "srl_nokia-feat:sflow";
       description
         "Context to configure sFlow parameters";
       leaf admin-state {
         type srl_nokia-comm:admin-state;
+        must 'starts-with(../../srl_nokia-if:name, "ethernet") or starts-with(../../srl_nokia-if:name, "lag") or (../admin-state = "disable")' {
+          srl_nokia-ext:if-feature "srl_nokia-features:sflow-lag";
+          error-message "sFlow collector is supported only on ethernet or LAG interfaces.";
+        }
         must 'starts-with(../../srl_nokia-if:name, "ethernet") or (../admin-state = "disable")' {
+          srl_nokia-ext:if-feature "not srl_nokia-features:sflow-lag";
           error-message "sFlow collector is supported only on ethernet interfaces.";
         }
         must 'not(../../breakout-mode) or (../admin-state = "disable")' {
@@ -449,6 +546,7 @@ module srl_nokia-interfaces {
         description
           "Administratively enable or disable sFlow on this interface";
       }
+      uses sflow-sample-rate-config;
     }
   }
 
@@ -712,7 +810,9 @@ module srl_nokia-interfaces {
 
          The IP MTU is not configurable for subinterfaces of loopback interfaces.
 
-         The 7220 IXR-D1, 7220 IXR-D2, 7220 IXR-D3, 7220 IXR-H2, and 7220 IXR-H3 systems support a maximum IP MTU of 9398 bytes.
+         The 7220 IXR-D1, 7220 IXR-D2, 7220 IXR-D3, 7220 IXR-D4, 7220 IXR-D5, 7220 IXR-H2, 7220 IXR-H3, and 7220 IXR-H4 systems support a maximum IP MTU of 9398 bytes.
+
+         The 7730 SXR systems support a maximum IP MTU of 9394 bytes.
 
          Each 7250 IXR IMM supports a maximum of 4 different IP MTU values. 7220 IXR systems do not have any limit on the maximum number of different IP MTU values.";
       must "not (starts-with(../../srl_nokia-if:name, 'system') or starts-with(../../srl_nokia-if:name, 'lo'))" {
@@ -723,7 +823,7 @@ module srl_nokia-interfaces {
       }
     }
     leaf l2-mtu {
-      if-feature "srl_nokia-feat:bridged";
+      if-feature "srl_nokia-feat:config-sub-if-l2-mtu";
       type uint16 {
         range "1450..9500";
       }
@@ -738,7 +838,9 @@ module srl_nokia-interfaces {
 
          The default value for a subinterface is taken from /system/mtu/default-l2-mtu. The L2 MTU is only configurable for bridged subinterfaces.
 
-         The 7220 IXR-D1, 7220 IXR-D2, 7220 IXR-D3, 7220 IXR-H2, and 7220 IXR-H3 systems support a maximum L2 MTU of 9412 bytes and minimum of 1500 bytes.
+         The 7220 IXR-D1, 7220 IXR-D2, 7220 IXR-D3, 7220 IXR-D4, 7220 IXR-D5, 7220 IXR-H2, 7220 IXR-H3, and 7220 IXR-H4 systems support a maximum L2 MTU of 9412 bytes and minimum of 1500 bytes.
+
+         The 7730 SXR systems support a maximum L2 MTU of 9408 bytes.
 
          The VSRL system supports a maximum L2 MTU of 9500 and minimum of 1450 bytes.
 
@@ -764,6 +866,8 @@ module srl_nokia-interfaces {
          The default MPLS MTU for a subinterface is taken from /system/mtu/default-mpls-mtu.
 
          The MPLS MTU is not configurable for subinterfaces of loopback interfaces.
+
+         The 7730 SXR systems support a maximum MPLS MTU of 9404 bytes.
 
          Each 7250 IXR IMM supports a maximum of 4 different MPLS MTU values.";
       must "not (starts-with(../../srl_nokia-if:name, 'system') or starts-with(../../srl_nokia-if:name, 'lo') or starts-with(../../srl_nokia-if:name, 'mgmt'))" {
@@ -799,7 +903,7 @@ module srl_nokia-interfaces {
         }
         description
           "Indicates the context in which the ethernet subinterface will be used";
-        must "(starts-with(../../srl_nokia-if:name, 'irb') or starts-with(../../srl_nokia-if:name, 'ethernet') or starts-with(../../srl_nokia-if:name, 'lag') or starts-with(../../srl_nokia-if:name, 'lif') or starts-with(../../srl_nokia-if:name, 'enp') or starts-with(../../srl_nokia-if:name, 'vhn'))" {
+        must "(starts-with(../../srl_nokia-if:name, 'ethernet') or starts-with(../../srl_nokia-if:name, 'lag') or starts-with(../../srl_nokia-if:name, 'lif') or starts-with(../../srl_nokia-if:name, 'enp') or starts-with(../../srl_nokia-if:name, 'vhn'))" {
           error-message "type not supported on this interface";
         }
         must "(. != 'srl_nokia-if:local-mirror-dest') or (starts-with(../../srl_nokia-if:name, 'ethernet') or starts-with(../../srl_nokia-if:name, 'lag'))" {
@@ -886,13 +990,19 @@ module srl_nokia-interfaces {
            <port>=port id {1,2,3,..}
 
            [note1] The maximum number of LAGs per platform is as follows:
-            D1: 32
-            D2-D3: 128
-            D4-D5: 64
-            H2-H3: 127
-            H4: 255
-            IXR: 128
-            vSRL: 8";
+            D1: 32 (N must be 1..32)
+            D2-D3: 128 (N must be 1..1000)
+            D4-D5: 64 (N must be 1..64)
+            H2-H3: 127 (N must be 1..127)
+            H4-32D: 127 (N must be 1..127)
+            H4: 255 (N must be 1..255)
+            IXR: 128 (N must be 1..128)
+            SXR-1d-32D: 128 (N must be 1..128)
+            SXR-1x-44S: 128 (N must be 1..128)
+            vSRL: 8 (N must be 1..8)
+            A1: 10 (N must be 1..10)
+            IXR-X1b: 128 (N must be 1..128)
+            IXR-X3b: 128 (N must be 1..128)";
       }
       uses interface-phys-config;
       leaf ifindex {
@@ -946,13 +1056,31 @@ module srl_nokia-interfaces {
            This field is not populated for non-forwarding-complex-attached interfaces, for example mgmt0.";
       }
       leaf-list phy-group-members {
-        if-feature "srl_nokia-feat:platform-7220-d2 or srl_nokia-feat:platform-fx2-zq";
+        if-feature "srl_nokia-feat:platform-7220-d2 or srl_nokia-feat:platform-7730-sxr-1d-32d or srl_nokia-feat:platform-7250-ixr-x1b";
         config false;
         type string;
         description
           "The group of interfaces sharing a phy with this interface
 
            On the 7220 IXR-D2 and 7220 IXR-D2L platforms this group of interfaces must be set to the same speed, either 1/10G or 25G.";
+      }
+      leaf-list physical-channel {
+        config false;
+        description
+          "The list of transceiver channels associated with this port";
+        type leafref {
+          path "/srl_nokia-if:interface/srl_nokia-if:transceiver/srl_nokia-if:channel/srl_nokia-if:index";
+        }
+      }
+      leaf forwarding-mode {
+        if-feature "srl_nokia-feat:system-forwarding-mode";
+        config false;
+        type enumeration {
+          enum store-and-forward;
+          enum cut-through;
+        }
+        description
+          "The forwarding mode for Ethernet frames received on this interface";
       }
       container statistics {
         srl_nokia-ext:delivery-node-override "true";
@@ -1134,6 +1262,19 @@ module srl_nokia-interfaces {
         }
       }
       container transceiver {
+        leaf functional-type {
+          if-feature "srl_nokia-feat:digital-coherent-optics";
+          type identityref {
+            base transceiver-functional-type;
+          }
+          description
+            "Indicates the module functional type which will be deployed for this interface
+
+             This refines the set of leaves available within the transceiver configuration.";
+          must "starts-with(../../srl_nokia-if:name, 'ethernet')" {
+            error-message "functional-type not supported on this interface";
+          }
+        }
         leaf tx-laser {
           type boolean;
           description
@@ -1181,11 +1322,13 @@ module srl_nokia-interfaces {
           }
         }
         leaf forward-error-correction {
+          if-feature "not srl_nokia-feat:platform-7215-a1";
           type enumeration {
             enum disabled;
             enum rs-528;
             enum rs-544;
             enum base-r {
+              if-feature "srl_nokia-feat:port-fec-clause74";
               description
                 "BASE-R FEC algorithm for 25GbE interfaces (also known as fire-code)";
             }
@@ -1199,7 +1342,7 @@ module srl_nokia-interfaces {
 
              The same FEC algorithm must be used at both ends of a link.
 
-             25G interfaces support disabled, base-r rs-108 and rs-528; configuring other (incompatible) options will bring the port down. The FEC requirement for a 25G interface depends on the cable type. A CA-N DAC cable has a loss specification that requires no FEC. A CA-S DAC cable requires base-r FEC at a minimum. A CA-L DAC cable requires the stronger rs-108 Reed Solomon FEC.
+             25G interfaces support disabled, base-r, rs-108 and rs-528; configuring other (incompatible) options will bring the port down. The FEC requirement for a 25G interface depends on the cable type. A CA-N DAC cable has a loss specification that requires no FEC. A CA-S DAC cable requires base-r FEC at a minimum. A CA-L DAC cable requires the stronger rs-108 Reed Solomon FEC.
 
              100G interfaces support disabled and rs-528; configuring other (incompatible) options will bring the port down.
 
@@ -1262,19 +1405,6 @@ module srl_nokia-interfaces {
           }
           description
             "Specifies the transceiver form factor associated with the port";
-        }
-        leaf functional-type {
-          if-feature "srl_nokia-feat:digital-coherent-optics";
-          type identityref {
-            base transceiver-functional-type;
-          }
-          description
-            "Indicates the module functional type which will be deployed for this interface
-
-             This refines the set of leaves available within the transceiver configuration.";
-          must "starts-with(../../srl_nokia-if:name, 'ethernet')" {
-            error-message "functional-type not supported on this interface";
-          }
         }
         leaf ethernet-pmd {
           config false;
@@ -1403,6 +1533,27 @@ module srl_nokia-interfaces {
           type srl_nokia-comm:date-and-time-delta;
           description
             "Transceiver date code.";
+        }
+        container firmware-version {
+          if-feature "srl_nokia-feat:digital-coherent-optics";
+          config false;
+          description
+            "Active firmware version
+
+             This is the information as read from the EEPROM of the part.
+             This is only available for digital coherent optic transceivers";
+          leaf major-revision {
+            config false;
+            type uint8;
+            description
+              "Major revision number";
+          }
+          leaf minor-revision {
+            config false;
+            type uint8;
+            description
+              "Minor revision number";
+          }
         }
         leaf fault-condition {
           config false;
@@ -1627,7 +1778,7 @@ module srl_nokia-interfaces {
           }
         }
         leaf forwarding-viable {
-          if-feature "srl_nokia-feat:lag";
+          if-feature "srl_nokia-feat:lag-forwarding-viable";
           type boolean;
           must '(../aggregate-id)' {
             error-message "aggregate-id must be configured";
@@ -1728,32 +1879,34 @@ module srl_nokia-interfaces {
           srl_nokia-ext:show-importance "high";
           type enumeration {
             enum 10M {
-              if-feature "srl_nokia-feat:platform-7220-d1 or srl_nokia-feat:platform-7215-a1";
+              if-feature "srl_nokia-feat:port-speed-10M";
             }
             enum 100M {
-              if-feature "srl_nokia-feat:platform-7220-d1 or srl_nokia-feat:platform-7215-a1";
+              if-feature "srl_nokia-feat:port-speed-100M";
             }
-            enum 1G;
+            enum 1G {
+              if-feature "srl_nokia-feat:port-speed-1G";
+            }
             enum 10G {
-              if-feature "srl_nokia-feat:platform-7250-j2 or srl_nokia-feat:platform-7220-d1 or srl_nokia-feat:platform-7220-d2 or srl_nokia-feat:platform-7220-d3 or srl_nokia-feat:platform-7220-d5 or srl_nokia-feat:platform-7220-h3 or srl_nokia-feat:platform-7220-h4 or srl_nokia-feat:platform-vsrl or srl_nokia-feat:platform-7250-ixr-e or srl_nokia-feat:platform-fx1-sdd or srl_nokia-feat:platform-7215-a1 or srl_nokia-feat:platform-fx2-zq or srl_nokia-feat:platform-7220-d4 or srl_nokia-feat:platform-7250-ixr-x3b";
+              if-feature "srl_nokia-feat:port-speed-10G or srl_nokia-feat:breakout-speed-10G";
             }
             enum 25G {
-              if-feature "srl_nokia-feat:platform-7220-d2 or srl_nokia-feat:platform-7220-d3 or srl_nokia-feat:platform-vsrl or srl_nokia-feat:platform-fx1-sdd or srl_nokia-feat:platform-fx2-zq or srl_nokia-feat:platform-7220-d4 or srl_nokia-feat:platform-7220-d5 or srl_nokia-feat:platform-7250-ixr-e or srl_nokia-feat:platform-7250-ixr-x3b or (srl_nokia-feat:platform-7220-h3 and srl_nokia-feat:future-0-0)";
+              if-feature "srl_nokia-feat:port-speed-25G or srl_nokia-feat:breakout-speed-25G";
             }
             enum 40G {
-              if-feature "srl_nokia-feat:platform-7250-ixr or srl_nokia-feat:platform-7220-d2 or srl_nokia-feat:platform-7220-d3 or srl_nokia-feat:platform-7220-d5 or srl_nokia-feat:platform-7220-d4 or srl_nokia-feat:platform-7220-h3 or srl_nokia-feat:platform-7220-h4 or srl_nokia-feat:platform-crimson or srl_nokia-feat:platform-vsrl or srl_nokia-feat:platform-7250-ixr-e or srl_nokia-feat:platform-fx1-sdd or srl_nokia-feat:platform-fx2-zq or srl_nokia-feat:platform-7250-ixr-x3b";
+              if-feature "srl_nokia-feat:port-speed-40G";
             }
             enum 50G {
-              if-feature "srl_nokia-feat:platform-7220-d3";
+              if-feature "srl_nokia-feat:port-speed-50G or srl_nokia-feat:breakout-speed-50G";
             }
             enum 100G {
-              if-feature "srl_nokia-feat:platform-7250-ixr or srl_nokia-feat:platform-7250-ixr-e or srl_nokia-feat:platform-7220-d2 or srl_nokia-feat:platform-7220-d3 or srl_nokia-feat:platform-7220-d5 or srl_nokia-feat:platform-7220-d4 or srl_nokia-feat:platform-7220-h2 or srl_nokia-feat:platform-7220-h3 or srl_nokia-feat:platform-7220-h4 or srl_nokia-feat:platform-crimson or srl_nokia-feat:platform-vsrl or srl_nokia-feat:platform-fx1-sdd or srl_nokia-feat:platform-fx2-zq or srl_nokia-feat:platform-7250-ixr-x3b";
+              if-feature "srl_nokia-feat:port-speed-100G or srl_nokia-feat:breakout-speed-100G";
             }
             enum 200G {
-              if-feature "srl_nokia-feat:platform-7220-h3 or srl_nokia-feat:platform-7220-d5";
+              if-feature "srl_nokia-feat:port-speed-200G or srl_nokia-feat:breakout-speed-200G";
             }
             enum 400G {
-              if-feature "srl_nokia-feat:platform-7250-ixr or srl_nokia-feat:platform-7250-ixr-e or srl_nokia-feat:platform-7250-j2 or srl_nokia-feat:platform-7220-d5 or srl_nokia-feat:platform-7220-d4 or srl_nokia-feat:platform-7220-h3 or srl_nokia-feat:platform-7220-h4 or srl_nokia-feat:platform-crimson or srl_nokia-feat:platform-fx1-sdd or srl_nokia-feat:platform-fx2-zq or srl_nokia-feat:platform-7250-ixr-x3b";
+              if-feature "srl_nokia-feat:port-speed-400G";
             }
             enum 800G {
               if-feature "srl_nokia-feat:platform-7250-ixr-e and srl_nokia-feat:future-0-0";
@@ -1771,11 +1924,33 @@ module srl_nokia-interfaces {
           description
             "The speed of the port or channel
 
-             The default speed of a port (when there is no configured value and auto-negotiation is disabled or unsupported) depends on the platform and port/connector number as follows:
+             If this parameter is configured, then the configured value will be applied.  If it is not configured, then there are two mechanisms that will set a speed for the port.
+
+             Some platforms support a mechanism to automatically set the port-speed based on the form factor of the inserted transceiver.
+                form-factor    speed
+                QSFP28         100G
+                SFP112         100G
+                SFP56-DD       100G
+                SFP            1G
+                SFP+           10G
+                QSFP56-DD      400G
+                QSFP56         200G
+                QSFP28-DD      200G
+                SFP28          25G
+                QSFP112        400G
+                QSFP+          40G
+                QSFP28-50G     50G
+                SFP56          50G
+                QSFP112-DD     800G
+                CFP2-DCO       400G
+
+             When the auto-configuration of speed based on form factor is not supported and the speed is not configured, then the default speed of a port (when auto-negotiation is disabled or unsupported) depends on the platform and port/connector number as follows:
 
              mgmt0 and mgmt0-standby ports: 1G
              J2 IMM ports 1-32:  100G
              J2 IMM ports 33-36: 100G
+             7215 IXS-A1 ports 1-48: 1G
+             7215 IXS-A1 ports 49-52: 10G
              7220-D1 ports 1-48: 1G
              7220-D1 ports 49-52: 10G
              7220-D2/D2L ports 1-48: 25G
@@ -1796,16 +1971,27 @@ module srl_nokia-interfaces {
              7220-H3 ports 3-34: 400G
              7220-H4 ports 1-64: 400G
              7220-H4 ports 65-66: 10G
-             7250 IXR-6e/10e 60p QSFP28 IMM all port:  100G
-             7250 IXR-6e/10e 36p QSFPDD-400 IMM all port:  400G
+             7220-H4-32D ports 1-32: 400G
+             7220-H4-32D ports 33: 10G
+             7250 IXR-6e/10e 60p QSFP28 IMM all ports:  100G
+             7250 IXR-6e/10e 36p QSFPDD-400 IMM all ports:  400G
+             7250 IXR-X1b QSFP28 ports 1-24: 100G
+             7250 IXR-X1b QSFPDD ports 25-36: 400G
+             7250 IXR-X3b QSFPDD all ports: 400G
+             7730 SXR-1d-32D QSFP28 ports 1-16,21-32: 100G
+             7730 SXR-1d-32D QSFPDD ports 17-20: 400G
+             7730 SXR-1x-44S SFPDD ports 1-20, 23-42: 100G
+             7730 SXR-1x-44S QSFPDD ports 21,22,43,44: 400G
 
              Supported speeds:
              mgmt0 and mgmt0-standby ports: 1G
-             J2 IMM ports 1-32: 40G, 100G [note1]
+             J2 IMM ports 1-32: 40G, 100G (Note 1)
              J2 IMM ports 33-36: 40G, 100G, 400G
+             7215 IXS-A1 ports 1-48: 10M, 100M, 1G
+             7215 IXS-A1 ports 49-52: 1G, 10G
              7220-D1 ports 1-48: 10M, 100M, 1G
              7220-D1 ports 49-52: 10G
-             7220-D2/D2L ports 1-48: 1G, 10G, 25G [note2]
+             7220-D2/D2L ports 1-48: 1G, 10G, 25G (Note 2)
              7220-D2 ports 49-56: 10G, 25G, 40G, 100G
              7220-D2L ports 49-56: 10G, 25G, 40G, 100G
              7220-D2L ports 57-58: 10G
@@ -1825,17 +2011,41 @@ module srl_nokia-interfaces {
              7220-H3 ports 3-34: 40G, 100G, 200G, 400G
              7220-H4 ports 1-64: 40G, 100G, 400G
              7220-H4 ports 65-66: 10G
-             7250 IXR-6e/10e 60p QSFP28 IMM all port:  100G
-             7250 IXR-6e/10e 36p QSFPDD-400 IMM all port:  40G, 100G, 400G
+             7220-H4-32D ports 1-32: 40G, 100G, 400G
+             7220-H4-32D ports 33: 10G
+             7250 IXR-6e/10e 60p QSFP28 IMM all ports:  100G
+             7250 IXR-6e/10e 36p QSFPDD-400 IMM all ports:  40G, 100G, 400G
+             7250 IXR-X1b QSFP28 ports 1-24: 40G, 100G (Note 4)
+             7250 IXR-X1b QSFPDD ports 25-36: 40G, 100G, 400G
+             7250 IXR-X3b QSFPDD all ports: 40G, 50G, 100G, 400G
+             7730 SXR-1d-32D QSFP28 ports 1-16,21-32: 40G, 100G (Note 3)
+             7730 SXR-1d-32D QSFPDD ports 17-20: 40G, 100G, 400G
+             7730 SXR-1x-44S SFPDD ports 1-20, 23-42: 10G, 25G, 100G
+             7730 SXR-1x-44S QSFPDD ports 21,22,43,44: 40G, 100G, 400G
 
-             [note1] Ports 9-12 cannot operate at different port speeds (some at 40G and others at 100G). The required speed of ports 9-12 is based on the port-speed of the lowest-numbered configured port in this block; if any higher-numbered port in the block is configured with a different port speed that port will not come up.
+             Note 1:
+              Ports 9-12 cannot operate at different port speeds (some at 40G and others at 100G). The required speed of ports 9-12 is based on the port-speed of the first configured port in this block; if any subsequent port in the block is configured with a different port speed that port will not come up.
 
-             [note2]
-              On 7220-D2: if one port in each consecutive group of 4 ports (1-4, 5-8, .. , 45-48) is configured and has a speed of 25G then the other 3 ports may only be configured if they also have a speed of 25G; if one port in each consecutive group of 4 ports (1-4, 5-8, .. , 45-48) is configured and has a speed of 1G or 10G the other 3 ports may only be configured if they also have a speed of 1G or 10G.
-              On 7220-D2L: if one port in each port group of 4 ports ({1, 2, 3, 6}, {4, 5, 7, 9}, {8, 10, 11, 12}, {13, 14, 15, 18}, {16, 17, 19, 21}, {20, 22, 23, 24}, {25, 26, 27, 30}, {28, 29, 31, 33}, {32, 34, 35, 36}, {37, 38, 39, 42}, {40, 41, 43, 45}, {44, 46, 47, 48}) is configured and has a speed of 25G the other 3 ports may only be configured if they also have a speed of 25G; if one port in each port group of 4 ports is configured and has a speed of 1G or 10G the other 3 ports may only be configured if they also have a speed of 1G or 10G.
+             Note 2:
+              On 7220-D2: if one port in each consecutive group of 4 ports (1-4, 5-8, .. , 45-48) is enabled and has a configured speed of 25G then the other 3 ports may only be enabled if they also have a configured speed of 25G or no speed configured; if one port in each consecutive group of 4 ports (1-4, 5-8, .. , 45-48) is enabled and has a configured speed of 1G or 10G the other 3 ports may only be enabled if they also have a configured speed of 1G or 10G or no speed configured.
+              On 7220-D2L: if one port in each port group of 4 ports ({1, 2, 3, 6}, {4, 5, 7, 9}, {8, 10, 11, 12}, {13, 14, 15, 18}, {16, 17, 19, 21}, {20, 22, 23, 24}, {25, 26, 27, 30}, {28, 29, 31, 33}, {32, 34, 35, 36}, {37, 38, 39, 42}, {40, 41, 43, 45}, {44, 46, 47, 48}) is enabled and has a configured speed of 25G the other 3 ports may only be enabled if they also have a configured speed of 25G or no speed configured; if one port in each port group of 4 ports is enabled and has a configured speed of 1G or 10G the other 3 ports may only be enabled if they also have a configured speed of 1G or 10G or no speed configured.
+
+             Note 3: Breakout and 40G is only supported on odd numbered ports.
+              For the QSFP28 four port groupings [1-4], [5-8], [9-12], [13-16], [21-24], [25-28], and [29-32] if either of the odd numbered ports within a group is enabled and configured for 40G, 4x10G, or 4x25G,
+              then the other odd numbered port in the same group may only be enabled if it is configured for one of 40G, 4x10G, or 4x25G (can differ between the odd ports) and neither of
+              the two even numbered ports within the same group can be enabled.
+
+             Note 4: For the QSFP28 ports, the following port groups exist [n, n+1, n+2, n+3] for n = 1, 5, 9, 13, 17, 21.  Breakout for 4x25G or 4x10G is only supported on ports n+1 and n+3.
+              If port n+1 within the group is configured for breakout and enabled, then port n cannot be enabled.
+              In addition if port n+1 is configured for breakout and enabled and port n+3 is configured without breakout and enabled, then port n+2 may only be configured and enabled with the same speed as port n+3.
+              If port n+3 within the group is configured for breakout and enabled, then port n+2 cannot be enabled.
+              In addition if port n+3 is configured for breakout and enabled and port n+1 is configured without breakout and enabled, then port n may only be configured and enabled with the same speed as port n+1.
 
              7250 IXR details:
-             If the interface corresponds to a connector that has no installed transceiver then the value is accepted without any checking or restriction, and info from state will display the configured value.  Otherwise if the configured port-speed is NOT supported by the installed transceiver the port is forced operationally down.";
+              If the interface corresponds to a connector that has no installed transceiver then the value is accepted without any checking or restriction, and info from state will display the configured value.  Otherwise if the configured port-speed is NOT supported by the installed transceiver the port is forced operationally down.
+
+             Port Groups and auto-configuration:
+              Manually configured and enabled port-speed (and breakout-modes) take precedence over the auto-configured port-speed.  This means that configuring and enabling a port within a port-group can have a side effect to take down an operational port that had its speed set based on the auto-configuration feature.  If there is risk of mixing transceiver types within a port group, then it is recommended to always manually configure the speed for enabled ports";
         }
         leaf hw-mac-address {
           config false;
@@ -1890,7 +2100,6 @@ module srl_nokia-interfaces {
              recovery using PTP packets on both local and downstream PTP clocks.";
         }
         leaf standby-signaling {
-          if-feature "srl_nokia-feat:evpn-mh-single-active";
           type enumeration {
             enum power-off;
             enum lacp;
@@ -1909,6 +2118,21 @@ module srl_nokia-interfaces {
 
              An application using a port-based redundancy mechanism will trigger the standby signaling on the ethernet
              interface if the interface is selected as standby.";
+        }
+        leaf link-loss-forwarding {
+          if-feature "srl_nokia-feat:link-loss-forwarding";
+          type boolean;
+          must "starts-with(../../srl_nokia-if:name, 'ethernet') or starts-with(../../srl_nokia-if:name, 'lag')" {
+            error-message "link-loss-forwarding not supported on this interface";
+          }
+          must 'not(../../breakout-mode)' {
+            error-message "standby-signaling not configurable when breakout-mode is enabled";
+          }
+          description
+            "Indicates the link-loss-forwarding used in the interface.
+
+             This is used to progagate a fault on a connection-point on a VPWS network-instance
+             to an ethernet or a lag interface.";
         }
         leaf reload-delay {
           if-feature "srl_nokia-feat:reload-delay";
@@ -1939,6 +2163,7 @@ module srl_nokia-interfaces {
             "The remaining time until the reload-delay expires and the interface can go operationally up.";
         }
         container hold-time {
+          if-feature "(not srl_nokia-feat:fpcx) or srl_nokia-feat:hold-time-fpcx";
           description
             "Configure interface hold timers for Ethernet interfaces";
           leaf up {
@@ -2006,6 +2231,9 @@ module srl_nokia-interfaces {
         }
         container crc-monitor {
           if-feature "srl_nokia-feat:crc-symbol-monitoring";
+          must '( (./signal-failure/exponent < ./signal-degrade/exponent) or ((./signal-failure/exponent = ./signal-degrade/exponent) and (./signal-failure/multiplier >= ./signal-degrade/multiplier)))' {
+            error-message "Signal-failure threshold must be equal to or larger than signal-degrade threshold";
+          }
           description
             "Parameters for crc frame error monitoring
 
@@ -2083,6 +2311,9 @@ module srl_nokia-interfaces {
         }
         container symbol-monitor {
           if-feature "srl_nokia-feat:crc-symbol-monitoring";
+          must '( (./signal-failure/exponent < ./signal-degrade/exponent) or ((./signal-failure/exponent = ./signal-degrade/exponent) and (./signal-failure/multiplier >= ./signal-degrade/multiplier)))' {
+            error-message "Signal-failure threshold must be equal to or larger than signal-degrade threshold";
+          }
           description
             "Parameters for ethernet symbol monitoring
 
@@ -2158,6 +2389,85 @@ module srl_nokia-interfaces {
               "Current alarms of the Ethernet symbol monitoring, raised when corresponding threshold is exceeded";
           }
         }
+        container exponential-port-dampening {
+          if-feature "srl_nokia-feat:exponential-port-dampening";
+          description
+            "Exponential port dampening parameters";
+          leaf admin-state {
+            type srl_nokia-comm:admin-state;
+            default "disable";
+            description
+              "Administrative state of exponential port dampening";
+          }
+          leaf half-life {
+            type uint32 {
+              range "1..2000";
+            }
+            units "seconds";
+            default "5";
+            description
+              "Half-life decay time";
+          }
+          leaf max-suppress-time {
+            type uint32 {
+              range "1..43200";
+            }
+            units "seconds";
+            default "20";
+            description
+              "Maximum suppression time";
+          }
+          leaf reuse-threshold {
+            type uint32 {
+              range "1..20000";
+            }
+            units "penalties";
+            default "1000";
+            description
+              "Threshold which port-up state is no longer suppressed";
+          }
+          leaf suppress-threshold {
+            type uint32 {
+              range "1..20000";
+            }
+            units "penalties";
+            default "2000";
+            description
+              "Threshold at which the port-up state is suppressed";
+          }
+          leaf current-penalties {
+            config false;
+            type srl_nokia-comm:zero-based-counter64;
+            description
+              "Indicates the accumulated penalties applied to the port
+
+               Penalties are accumulated on every port down event except a system restart.";
+          }
+          leaf max-penalties {
+            config false;
+            type srl_nokia-comm:zero-based-counter64;
+            description
+              "Indicates the maximum possible value of the accumulated penalties against the port";
+          }
+          leaf oper-state {
+            config false;
+            type enumeration {
+              enum active {
+                value 1;
+              }
+              enum idle {
+                value 2;
+              }
+            }
+            description
+              "Indicates if the port up state of the port is suppressed or not
+
+               The port up state is 'idle' if the value of current-penalties
+               exceeds the value of suppress-threshold. The port up state will
+               be 'active' when current-penalties falls below the value of
+               reuse-threshold.";
+          }
+        }
         container storm-control {
           if-feature "srl_nokia-feat:storm-control";
           presence "Configures the storm-control parameters";
@@ -2185,13 +2495,13 @@ module srl_nokia-interfaces {
             }
             description
               "The maximum rate allowed for ingress broadcast frames on the interface
-              
-               The rate can be set in multiple of 64kbps. If the rate is configured to any value 
-               in the 1-127 kbps range, the effective rate will be 64kbps and shown in the 
-               operational rate. If any value in the 128-191 range, the effective rate will be 
+
+               The rate can be set in multiple of 64kbps. If the rate is configured to any value
+               in the 1-127 kbps range, the effective rate will be 64kbps and shown in the
+               operational rate. If any value in the 128-191 range, the effective rate will be
                128kbps and shown in the operational rate, and so on for higher rates. When the
                rate is set to zero, all the broadcast traffic in the interface is discarded.
-               
+
                The maximum rate that can be effectively configured in 7220 D4/D5 platforms is
                132000000. When a configured percentage exceeds that value, the maximum supported
                rate is set and shown in the operational-broadcast-rate.";
@@ -2205,13 +2515,13 @@ module srl_nokia-interfaces {
             }
             description
               "The maximum rate allowed for ingress multicast frames on the interface
-              
-               The rate can be set in multiple of 64kbps. If the rate is configured to any value 
-               in the 1-127 kbps range, the effective rate will be 64kbps and shown in the 
-               operational rate. If any value in the 128-191 range, the effective rate will be 
+
+               The rate can be set in multiple of 64kbps. If the rate is configured to any value
+               in the 1-127 kbps range, the effective rate will be 64kbps and shown in the
+               operational rate. If any value in the 128-191 range, the effective rate will be
                128kbps and shown in the operational rate, and so on for higher rates. When the
                rate is set to zero, all the multicast traffic in the interface is discarded.
-               
+
                The maximum rate that can be effectively configured in 7220 D4/D5 platforms is
                132000000. When a configured percentage exceeds that value, the maximum supported
                rate is set and shown in the operational-multicast-rate.";
@@ -2225,13 +2535,13 @@ module srl_nokia-interfaces {
             }
             description
               "The maximum rate allowed for ingress unknown unicast frames on the interface
-              
-               The rate can be set in multiple of 64kbps. If the rate is configured to any value 
-               in the 1-127 kbps range, the effective rate will be 64kbps and shown in the 
-               operational rate. If any value in the 128-191 range, the effective rate will be 
+
+               The rate can be set in multiple of 64kbps. If the rate is configured to any value
+               in the 1-127 kbps range, the effective rate will be 64kbps and shown in the
+               operational rate. If any value in the 128-191 range, the effective rate will be
                128kbps and shown in the operational rate, and so on for higher rates. When the
                rate is set to zero, all the unknown unicast traffic in the interface is discarded.
-               
+
                The maximum rate that can be effectively configured in 7220 D4/D5 platforms is
                132000000. When a configured percentage exceeds that value, the maximum supported
                rate is set and shown in the operational-multicast-rate.";

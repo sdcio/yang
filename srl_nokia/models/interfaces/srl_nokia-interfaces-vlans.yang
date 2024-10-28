@@ -20,6 +20,10 @@ module srl_nokia-interfaces-vlans {
 
      This model describes management of VLAN parameters under SRL Interfaces";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -179,7 +183,7 @@ module srl_nokia-interfaces-vlans {
             if-feature "srl_nokia-feat:vlan-id-optional";
           }
           enum any {
-            if-feature "srl_nokia-feat:qinq";
+            if-feature "srl_nokia-feat:vlan-id-any";
           }
         }
       }
@@ -231,13 +235,16 @@ module srl_nokia-interfaces-vlans {
         type vlan-id;
         type enumeration {
           enum any {
-            if-feature "srl_nokia-feat:disabled";
+            if-feature "srl_nokia-feat:vlan-id-any";
           }
           enum optional;
         }
       }
       description
         "Inner VLAN tag identifier for double-tagged packets";
+      must "string(.) != 'optional' or (string(../outer-vlan-id) = 'optional')" {
+        error-message "inner-vlan-id optional requires outer-vlan-id to be optional";
+      }
       mandatory true;
     }
     leaf outer-vlan-id {

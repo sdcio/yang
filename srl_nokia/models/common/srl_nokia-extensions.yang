@@ -11,6 +11,10 @@ module srl_nokia-extensions {
   description
     "YANG module detailing SRLinux extensions";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -116,7 +120,7 @@ module srl_nokia-extensions {
        is printed as part of info from state output. Applies to any cli outputs (text/json/table).
        Can be suppressed from cli by doing info detail from state.
 
-       Currently the only values supported are: time-delta, natural-time-delta, with-units
+       Currently the only values supported are: time-delta, natural-time-delta, with-units, hex, hex-with-colons
 
        time-delta
 
@@ -146,6 +150,12 @@ module srl_nokia-extensions {
 
            When this flavor is used to display a numerical value, info from state will display it converted to hex
            value (with leading 0x and using uppercase letters for hex digits). E.g. instead of 168 will show 0xA8.
+
+       hex-with-colons
+
+           When this flavor is used to display a numerical value, info from state will display it converted to hex
+           value where every byte is sepated by a colon (using uppercase letters for hex digits).
+           E.g. instead of 10010 will show 27:1A.
       ";
     argument flavor-name;
   }
@@ -197,6 +207,24 @@ module srl_nokia-extensions {
           Uses the on_change stream mode, which sends updates immediately as they happen
 
        The default if not specified is on_change.";
+    argument mode;
+  }
+
+  extension filtering-support {
+    description
+      "Takes as an argument a string describing the filtering support of the application.
+
+       Valid options are 'parent', 'none'
+
+       parent
+          The application supports filtering conditions between parents, children fields
+          and containers within the same application.
+
+       none
+          The application does not suport filtering. Limited filtering of children fields
+          and containers is supported within same application model by fallback.
+
+       The value is inherited from parents within the same model. The default if not specified or inherited is none.";
     argument mode;
   }
 

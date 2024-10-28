@@ -24,6 +24,10 @@ module srl_nokia-tools-ethcfm {
   description
     "This module defines the tools commands to start Ethernet CFM on-demand tests and clear operational state.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -96,18 +100,22 @@ module srl_nokia-tools-ethcfm {
       default "7";
     }
     leaf transmit-count {
+      if-feature "srl_nokia-feat:future-0-0";
       description
         "The number of packets to send for a LBM test";
       type uint32 {
         range "1..1024";
       }
-      default "3";
+      default "10";
     }
     leaf interval {
+      if-feature "srl_nokia-feat:future-0-0";
       description
-        "The packet frequency for a LBM test.";
+        "The packet frequency for a LBM test
+
+         The value '0s' will transmit packets at the fastest back-to-back rate for the platform.";
       type srl_nokia-ethcfm-types:eth-lbm-interval;
-      default "1s";
+      default "0s";
     }
   }
 

@@ -54,6 +54,10 @@ module srl_nokia-isis {
   description
     "This yang file models configuration and state of the IS-IS protocol";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -745,6 +749,10 @@ module srl_nokia-isis {
             range "0..3";
           }
           default "2";
+          must '. <= 2' {
+            error-message "Max SR-Policy LFA labels cannot be greater than 2 on IXR SRX platforms.";
+            srl_nokia-ext:if-feature "srl_nokia-features:fpcx";
+          }
         }
         container node-protect {
           description
@@ -1016,12 +1024,14 @@ module srl_nokia-isis {
         default "enable";
       }
       leaf enable-bfd {
+        if-feature "srl-feat:bfd";
         description
           "Enable BFD for IPv4";
         type boolean;
         default "false";
       }
       leaf include-bfd-tlv {
+        if-feature "srl-feat:bfd";
         description
           "Specifies whether a BFD-enabled TLV is included for IPv4 on this IS-IS interface.";
         type boolean;
@@ -1039,12 +1049,14 @@ module srl_nokia-isis {
         default "enable";
       }
       leaf enable-bfd {
+        if-feature "srl-feat:bfd";
         description
           "Enable BFD for IPv6";
         type boolean;
         default "false";
       }
       leaf include-bfd-tlv {
+        if-feature "srl-feat:bfd";
         description
           "Specifies whether a BFD-enabled TLV is included for IPv6 on this IS-IS interface.";
         type boolean;
@@ -1223,6 +1235,10 @@ module srl_nokia-isis {
         "The maximum number of ECMP next-hops to program into the FIB for every IP prefix";
       type isis-ecmp;
       default "1";
+      must '. <= 8' {
+        error-message "Max ECMP paths cannot be greater than 8 on 7215 A1 platform.";
+        srl_nokia-ext:if-feature "srl_nokia-features:platform-7215-a1";
+      }
     }
     container weighted-ecmp {
       if-feature "srl-feat:isis-ucmp";
@@ -1244,9 +1260,16 @@ module srl_nokia-isis {
         type uint8 {
           range "1..128";
         }
-        default "128";
         must '. >= ../../max-ecmp-paths' {
           error-message "Hash buckets per ECMP next-hop-group cannot be less than the ECMP limit";
+        }
+        must '. <= 128' {
+          error-message "Hash buckets per ECMP next-hop-group cannot be greater than 128 on J2 and J2C+ platforms.";
+          srl_nokia-ext:if-feature "srl_nokia-features:jericho2 or srl_nokia-features:jericho2cp";
+        }
+        must '. <= 64' {
+          error-message "Hash buckets per ECMP next-hop-group cannot be greater than 64 on SRX platforms.";
+          srl_nokia-ext:if-feature "srl_nokia-features:fpcx";
         }
       }
     }
@@ -1268,6 +1291,20 @@ module srl_nokia-isis {
         "RFC6822: IS-IS Multi-Instance. TLV 7";
       type boolean;
       default "false";
+    }
+    leaf advertise-router-capability {
+      if-feature "srl-feat:isis-rtr-capability";
+      description
+        "Allow router advertisement capabilities";
+      type boolean;
+      default "true";
+    }
+    leaf prefix-attributes-tlv {
+      if-feature "srl-feat:isis-rtr-capability";
+      description
+        "Use IS-IS Prefix Attributes TLV to exchange extended IPv4 and IPv6 reachability information";
+      type boolean;
+      default "true";
     }
     leaf export-policy {
       description
@@ -1859,7 +1896,7 @@ module srl_nokia-isis {
 
   grouping isis-inst-maximum-segment-depth {
     container maximum-sid-depth {
-      if-feature "srl-feat:entropy-bgp-sr";
+      if-feature "srl-feat:traffic-engineering";
       description
         "Container to configure advertise multiple types of Maximum SID Depths (MSDs).
 
@@ -1870,14 +1907,23 @@ module srl_nokia-isis {
         description
           "Value to override the announced node MSD-BMI value";
         type int32 {
-          range "0..12";
+          range "0..15";
+        }
+        must '. <= 10' {
+          error-message "Max labels that can be imposed cannot be greater than 10 on IXR DNX platforms.";
+          srl_nokia-ext:if-feature "srl_nokia-features:jericho2 or srl_nokia-features:jericho2cp";
+        }
+        must '. <= 15' {
+          error-message "Max labels that can be imposed cannot be greater than 15 on IXR SRX platforms.";
+          srl_nokia-ext:if-feature "srl_nokia-features:fpcx";
         }
       }
       leaf override-erld {
+        if-feature "srl-feat:entropy-bgp-sr";
         description
           "Value to override the announced node MSD-ERLD value";
         type int32 {
-          range "0..15";
+          range "0..14";
         }
       }
     }
@@ -1906,20 +1952,6 @@ module srl_nokia-isis {
             must 'boolean(../../../../../dynamic-label-block) or (. != true())' {
               error-message "Dynamic adj sid-s can be enabled on all interfaces only when the Dynamic SRLB is configured.";
             }
-          }
-          leaf hold-time {
-            description
-              "Adjacency SID hold time that is applicable to dynamically allocated adjacency SIDs";
-            type union {
-              type enumeration {
-                enum none;
-              }
-              type uint16 {
-                range "1..300";
-              }
-            }
-            units "seconds";
-            default "15";
           }
         }
         uses isis-inst-entropy-label;
@@ -1952,6 +1984,21 @@ module srl_nokia-isis {
             "Status of the label block.
 
              The label block may show as unavailable if there is pending cleanup.";
+        }
+        leaf adjacency-sid-hold-time {
+          if-feature "srl-feat:isis-adjsid-holdtime";
+          description
+            "Timer to maintain the operational state of the adjacency SID following a failure of the adjacency.";
+          type union {
+            type enumeration {
+              enum none;
+            }
+            type uint16 {
+              range "1..300";
+            }
+          }
+          units "seconds";
+          default "15";
         }
         uses isis-sid-database;
       }

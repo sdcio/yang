@@ -27,6 +27,10 @@ module srl_nokia-bridge-table-proxy-arp-nd {
   description
     "This yang file gives a description of bridge table proxy arp and nd configuration.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -892,7 +896,6 @@ module srl_nokia-bridge-table-proxy-arp-nd {
             value 2;
           }
           enum router-host {
-            if-feature "srl-feat:evpn-mac-ip-adv-arp-nd-ext-comm";
             value 3;
           }
         }

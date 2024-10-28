@@ -27,6 +27,10 @@ module srl_nokia-acl-qos {
   description
     "This module defines configuration and operational state data for access control lists (ACL) support of QoS classification conditions and actions.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -79,7 +83,7 @@ module srl_nokia-acl-qos {
           "The forwarding class to which the DSCP value is mapped";
       }
       leaf drop-probability {
-        if-feature "not srl_nokia-feat:future-0-0";
+        if-feature "not srl_nokia-feat:fpcx";
         type drop-probability;
         description
           "Assign matching packets to the specified drop probability level
@@ -87,7 +91,7 @@ module srl_nokia-acl-qos {
            The implicit default, if not specified, is low drop-probability.";
       }
       container rewrite {
-        if-feature "not srl_nokia-feat:platform-7250-ixr and not srl_nokia-feat:platform-7250-ixr-e and not srl_nokia-feat:platform-7250-ixr-x3b and not srl_nokia-feat:future-0-0";
+        if-feature "not srl_nokia-feat:platform-7250-ixr and not srl_nokia-feat:platform-7250-ixr-e and not srl_nokia-feat:platform-7250-ixr-x3b and not srl_nokia-feat:fpcx";
         description
           "Rewrite actions associated with packets that match the classifier entry. Where a packet matches these criteria, the specified rewrite actions should be performed.";
         leaf set-dscp {
@@ -101,7 +105,7 @@ module srl_nokia-acl-qos {
         }
       }
       leaf profile {
-        if-feature "srl_nokia-feat:future-0-0";
+        if-feature "srl_nokia-feat:fpcx";
         type srl_nokia-comm:classify-profile;
         description
           "The profile to which the DSCP value is mapped";
@@ -193,7 +197,7 @@ module srl_nokia-acl-qos {
 
   augment "/srl_nokia-qos:qos/srl_nokia-qos:classifiers" {
     if-feature "srl_nokia-feat:ip-qos-multifield";
-    if-feature "not srl_nokia-feat:future-0-0";
+    if-feature "not srl_nokia-feat:fpcx";
     uses multifield-classification-policies;
   }
 
@@ -236,7 +240,7 @@ module srl_nokia-acl-qos {
 
   augment "/srl_nokia-qos:qos/srl_nokia-qos:interfaces/srl_nokia-qos:interface/srl_nokia-qos:input/srl_nokia-qos:classifiers" {
     if-feature "srl_nokia-feat:ip-qos-multifield";
-    if-feature "not srl_nokia-feat:future-0-0";
+    if-feature "not srl_nokia-feat:fpcx";
     uses qos-interface-classifiers-config;
   }
 }

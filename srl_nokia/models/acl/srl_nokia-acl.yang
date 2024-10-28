@@ -36,6 +36,10 @@ module srl_nokia-acl {
   description
     "This module defines configuration and operational state data for access control lists (ACLs) and related objects.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -103,7 +107,7 @@ module srl_nokia-acl {
              This is non-zero even if the filter is not applied to any subinterfaces of this complex. It captures the effect of TCAM entry expansion to deal with L4 port or VLAN ranges, for example.";
         }
         leaf input-total {
-          if-feature "not srl_nokia-feat:future-0-0";
+          if-feature "not srl_nokia-feat:fpcx";
           type uint16;
           description
             "The number of TCAM entries required to implement this entry on all subinterfaces of this complex where the filter is applied to ingress traffic.
@@ -111,7 +115,7 @@ module srl_nokia-acl {
              For example, if a single-instance of the entry takes 2 TCAM entries and the filter is an output-only subinterface-specific filter and the filter is applied to 5 subinterfaces on output and to 5 subinterfaces on input then input-total=2. If the entry is not applied to ingress traffic on any subinterfaces of this complex then input-total=0.";
         }
         leaf output-total {
-          if-feature "not srl_nokia-feat:future-0-0";
+          if-feature "not srl_nokia-feat:fpcx";
           type uint16;
           description
             "The number of TCAM entries required to implement this entry on all subinterfaces of this complex where the filter is applied to egress traffic.
@@ -246,7 +250,7 @@ module srl_nokia-acl {
         }
       }
       list policer {
-        if-feature "(srl_nokia-feat:trident3 or srl_nokia-feat:trident4 or srl_nokia-feat:future-0-0 or srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp or srl_nokia-feat:platform-vsrl)";
+        if-feature "(srl_nokia-feat:platform-7215-a1 or srl_nokia-feat:trident3 or srl_nokia-feat:trident4 or srl_nokia-feat:fpcx or srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp or srl_nokia-feat:platform-vsrl)";
         description
           "List of policer templates used in subintreface and CPM Filter ACL.";
         key "name";
@@ -256,7 +260,7 @@ module srl_nokia-acl {
           type srl_nokia-comm:name;
         }
         leaf entry-specific {
-          if-feature "not srl_nokia-feat:future-0-0";
+          if-feature "not srl_nokia-feat:fpcx";
           type boolean;
           default "false";
           description
@@ -273,7 +277,7 @@ module srl_nokia-acl {
               value 1;
             }
             enum subinterface {
-              if-feature "not srl_nokia-feat:future-0-0";
+              if-feature "not srl_nokia-feat:fpcx";
               value 2;
             }
           }
@@ -981,7 +985,7 @@ module srl_nokia-acl {
 
   grouping match-network-instance {
     leaf network-instance {
-      if-feature "srl_nokia-feat:future-0-0";
+      if-feature "srl_nokia-feat:acl-cpm-filter-match-network-instance";
       type leafref {
         path "/srl_nokia-netinst:network-instance/srl_nokia-netinst:name";
       }
@@ -1013,15 +1017,17 @@ module srl_nokia-acl {
 
   grouping ip-policy-fowarding-filter-entry-action-config {
     container forward {
-      if-feature "srl_nokia-feat:future-0-0";
+      if-feature "srl_nokia-feat:acl-filter-redirect-to-next-hop";
       presence "Enable the next-hop context";
       description
         "Enable the next-hop context";
-      container next-hop {
-        leaf address {
-          description
-            "IP address of next hop to forward matching packets.";
-          type srl_nokia-comm:ip-address;
+      choice forward-action {
+        container next-hop {
+          leaf address {
+            description
+              "IP address of next hop to forward matching packets.";
+            type srl_nokia-comm:ip-address;
+          }
         }
       }
     }
@@ -1037,7 +1043,7 @@ module srl_nokia-acl {
           description
             "Accept matching packets and forward them towards their normal destination";
           leaf forwarding-class {
-            if-feature "not srl_nokia-feat:platform-7220-d1 and srl_nokia-feat:future-0-0";
+            if-feature "srl_nokia-feat:qos and srl_nokia-feat:acl-filter-qos-forwarding-class";
             must "not (string(../../../../name) = 'system' or string(../../../../name) = 'capture')" {
               error-message "The acl-filter name must not be system or capture";
             }
@@ -1048,7 +1054,7 @@ module srl_nokia-acl {
               "The QoS forwarding class to which the packet is mapped";
           }
           leaf profile {
-            if-feature "srl_nokia-feat:future-0-0";
+            if-feature "srl_nokia-feat:acl-filter-qos-profile";
             must "not (string(../../../../name) = 'system' or string(../../../../name) = 'capture')" {
               error-message "The acl-filter name must not be system or capture";
             }
@@ -1073,7 +1079,7 @@ module srl_nokia-acl {
               }
             }
             leaf policer {
-              if-feature "(srl_nokia-feat:trident3 or srl_nokia-feat:trident4 or srl_nokia-feat:future-0-0 or srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp or srl_nokia-feat:platform-vsrl)";
+              if-feature "(srl_nokia-feat:platform-7215-a1 or srl_nokia-feat:trident3 or srl_nokia-feat:trident4 or srl_nokia-feat:fpcx or srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp or srl_nokia-feat:platform-vsrl)";
               type leafref {
                 path "/acl/policers/policer/name";
               }
@@ -1097,6 +1103,7 @@ module srl_nokia-acl {
              Dropped IP packets do not result in sending ICMP messages back to the source";
         }
         container copy {
+          if-feature "not srl_nokia-feat:fpcx";
           must "string(../../../name) = 'capture'" {
             error-message "The acl-filter name must be capture";
           }
@@ -1106,7 +1113,7 @@ module srl_nokia-acl {
         }
       }
       leaf collect-stats {
-        if-feature "srl_nokia-feat:future-0-0";
+        if-feature "srl_nokia-feat:fpcx";
         must "not (string(../../../name) = 'system' or string(../../../name) = 'capture') or . = false()" {
           error-message "The acl-filter name must not be system or capture";
         }
@@ -1116,7 +1123,7 @@ module srl_nokia-acl {
           "Collect statistics for each entry of the ACL. If this is set to false no hardware resources are allocated to collecting statistics for this ACL entry.";
       }
       leaf log {
-        if-feature "not srl_nokia-feat:future-0-0";
+        if-feature "not srl_nokia-feat:fpcx";
         must "not (string(../../../name) = 'capture') or . = false()" {
           error-message "The acl-filter name must not be system or capture";
         }
@@ -1184,7 +1191,7 @@ module srl_nokia-acl {
           "Time of the last clear command performed by the user at this level or a higher level";
       }
       leaf incomplete {
-        if-feature "not srl_nokia-feat:future-0-0";
+        if-feature "not srl_nokia-feat:fpcx";
         type boolean;
         description
           "Returns true when at least one linecard had insufficient stats resources to ensure an accurate set of values for the number of matched packets.";
@@ -1197,7 +1204,7 @@ module srl_nokia-acl {
       }
       leaf matched-octets {
         srl_nokia-ext:show-importance "high";
-        if-feature "srl_nokia-feat:future-0-0";
+        if-feature "srl_nokia-feat:fpcx";
         description
           "The number of octets packets matching the entry since it was programmed or since the last clear, considering the mgmt0 subinterface and all subinterfaces of all linecard ports that use the ACL as an input ACL";
         type srl_nokia-comm:zero-based-counter64;
@@ -1210,7 +1217,7 @@ module srl_nokia-acl {
       }
       container policer {
         srl_nokia-ext:delivery-node-override "true";
-        if-feature "srl_nokia-feat:trident3 or srl_nokia-feat:trident4 or srl_nokia-feat:future-0-0 or srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp";
+        if-feature "srl_nokia-feat:platform-7215-a1 or srl_nokia-feat:trident3 or srl_nokia-feat:trident4 or srl_nokia-feat:fpcx or srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp";
         description
           "Policer stats for traffic matching the entry:
 
@@ -1236,7 +1243,7 @@ module srl_nokia-acl {
         "Time of the last clear command performed by the user at this level or a higher level";
     }
     leaf incomplete {
-      if-feature "not srl_nokia-feat:future-0-0";
+      if-feature "not srl_nokia-feat:fpcx";
       type boolean;
       description
         "Returns true when at least one linecard had insufficient stats resources to ensure an accurate set of values for the number of matched packets.";
@@ -1249,7 +1256,7 @@ module srl_nokia-acl {
     }
     leaf matched-octets {
       srl_nokia-ext:show-importance "high";
-      if-feature "srl_nokia-feat:future-0-0";
+      if-feature "srl_nokia-feat:fpcx";
       description
         "The number of octets packets matching the entry since it was programmed or since the last clear, considering the mgmt0 subinterface and all subinterfaces of all linecard ports that use the ACL as an input ACL";
       type srl_nokia-comm:zero-based-counter64;
@@ -1333,7 +1340,7 @@ module srl_nokia-acl {
         description
           "Container for the conditions that determine whether a packet matches this entry";
         container l2 {
-          if-feature "not srl_nokia-feat:future-0-0";
+          if-feature "not srl_nokia-feat:fpcx";
           description
             "Container for the common layer-2 match criteria";
           uses common-acl-filter-entry-match-l2-config;
@@ -1379,9 +1386,6 @@ module srl_nokia-acl {
           type leafref {
             path "/srl_nokia-if:interface/srl_nokia-if:name";
           }
-          must "(. != 'system0')" {
-            error-message "Invalid interface. System0 is not allowed.";
-          }
           description
             "Reference to a base interface, for example a port or LAG";
         }
@@ -1400,9 +1404,6 @@ module srl_nokia-acl {
                 /srl_nokia-if:interface[srl_nokia-if:name=current()/../../interface-ref/interface]/srl_nokia-if:subinterface[srl_nokia-if:index=current()/../../interface-ref/subinterface]/srl_nokia-if:type = 'srl_nokia-if:routed' or
                 string(/srl_nokia-if:interface[srl_nokia-if:name=current()/../../interface-ref/interface]/srl_nokia-if:subinterface[srl_nokia-if:index=current()/../../interface-ref/subinterface]/srl_nokia-if:type) = '' " {
             error-message "ACL allowed with subinterface type bridged or routed";
-          }
-          must "not(starts-with(/srl_nokia-if:interface[srl_nokia-if:name=current()/../../interface-ref/interface]/srl_nokia-if:subinterface[srl_nokia-if:index=current()/../../interface-ref/subinterface]/srl_nokia-if:name,'system'))" {
-            error-message "IP ACLs not allowed on system subinterface";
           }
           must "not(starts-with(/srl_nokia-if:interface[srl_nokia-if:name=current()/../../interface-ref/interface]/srl_nokia-if:subinterface[srl_nokia-if:index=current()/../../interface-ref/subinterface]/srl_nokia-if:name,'lo'))" {
             error-message "IP ACLs not allowed on loopback subinterface";
@@ -1452,6 +1453,7 @@ module srl_nokia-acl {
         }
       }
       container output {
+        if-feature "not srl_nokia-feat:platform-7215-a1";
         description
           "Container for ACL filters that apply to ingress traffic on the subinterface";
         list acl-filter {
@@ -1511,7 +1513,7 @@ module srl_nokia-acl {
           "Defines the type of ACL filter:
            ipv4: IPv4 ACL filter
            ipv6: IPv6 ACL filter
-           mac: MAC ACL filter";
+           mac: MAC ACL filter (not applicable in FPcx)";
         type enumeration {
           enum ipv4 {
             value 1;
@@ -1520,7 +1522,7 @@ module srl_nokia-acl {
             value 2;
           }
           enum mac {
-            if-feature "srl_nokia-feat:platform-7220-d2 or srl_nokia-feat:platform-7220-d3 or srl_nokia-feat:platform-7220-d4 or srl_nokia-feat:platform-7220-d5";
+            if-feature "srl_nokia-feat:platform-7215-a1 or srl_nokia-feat:platform-7220-d2 or srl_nokia-feat:platform-7220-d3 or srl_nokia-feat:platform-7220-d4 or srl_nokia-feat:platform-7220-d5";
             value 3;
           }
         }
@@ -1534,7 +1536,7 @@ module srl_nokia-acl {
           "Description string for the filter policy";
       }
       leaf subinterface-specific {
-        if-feature "not srl_nokia-feat:future-0-0";
+        if-feature "not srl_nokia-feat:fpcx";
         type enumeration {
           enum disabled {
             value 1;
@@ -1565,7 +1567,7 @@ module srl_nokia-acl {
            input-and-output: each subinterface that references the ACL as either an input ACL or an output ACL uses its own separate instance of the filter";
       }
       leaf statistics-per-entry {
-        if-feature "not srl_nokia-feat:future-0-0";
+        if-feature "not srl_nokia-feat:fpcx";
         type boolean;
         must "not (../name = 'system' or ../name = 'capture')" {
           error-message "The acl-filter name must not be system or capture";

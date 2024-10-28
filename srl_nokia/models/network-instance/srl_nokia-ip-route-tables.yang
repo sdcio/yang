@@ -27,6 +27,10 @@ module srl_nokia-ip-route-tables {
   description
     "A model describing the IP routing tables of a network instance.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -652,6 +656,25 @@ module srl_nokia-ip-route-tables {
           type srl_nokia-comm:ip-address;
           description
             "Destination IP address to use for the encapsulated packet.";
+        }
+      }
+      container counters {
+        description
+          "Next-hop forwarding counters";
+        leaf resource-allocation-failed {
+          type boolean;
+          description
+            "An available decap-next-hop-statistics resource was not available for this next-hop in all forwarding complexes";
+        }
+        leaf packets-forwarded {
+          type srl_nokia-comm:zero-based-counter64;
+          description
+            "The number of packets forwarded to this next-hop";
+        }
+        leaf octets-forwarded {
+          type srl_nokia-comm:zero-based-counter64;
+          description
+            "The number of octets in packets forwarded to this next-hop";
         }
       }
     }

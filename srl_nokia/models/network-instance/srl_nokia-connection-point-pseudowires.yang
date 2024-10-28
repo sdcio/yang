@@ -27,6 +27,10 @@ module srl_nokia-connection-point-pseudowires {
   description
     "This yang file models configuration and state of the connection endpoints";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -173,7 +177,30 @@ module srl_nokia-connection-point-pseudowires {
          If set to true, the router signals the support of the control
          word for the pseudowires. If the remote peer signals support
          for the control word too, the router pushes the control word
-         immediately below the vc label.";
+         immediately below the vc label (or the flow-label if enabled).";
+    }
+    leaf flow-label {
+      if-feature "srl-feat:flow-aware-transport-label";
+      type boolean;
+      default "false";
+      description
+        "Whether the flow aware transport (FAT) label is enabled for the
+         pseudowire. If set to true, the router signals the support of the FAT
+         label for the pseudowire. If the remote peer signals support for the
+         FAT label too, the router pushes the FAT label immediately below the
+         vc label.";
+    }
+    leaf flow-label-oper-state {
+      srl_nokia-ext:show-importance "high";
+      if-feature "srl-feat:flow-aware-transport-label";
+      description
+        "Operational state of the flow label on the pseudowire
+
+         The state depends on the local configuration of flow-label and the R
+         flag signaled by the peer. When set to down, the flow-aware transport
+         label is not used irrespective of the local configuration of the
+         flow-label.";
+      type srl_nokia-comm:oper-state;
     }
   }
 
@@ -181,7 +208,8 @@ module srl_nokia-connection-point-pseudowires {
     list pseudowire {
       max-elements 1;
       must "(../../type = 'mac-vrf')" {
-        error-message "pseudowires configuration is only possible on network-instance of type mac-vrf";
+        srl_nokia-ext:if-feature "not srl_nokia-feat:pseudowire-in-vpws";
+        error-message "pseudowire configuration is only possible on network-instances of type mac-vrf";
       }
       key "name";
       description
@@ -218,7 +246,7 @@ module srl_nokia-connection-point-pseudowires {
           enum no-ingress-vc-label;
           enum no-egress-vc-label;
           enum network-instance-mtu-mismatch;
-          enum pseudowire-remote-system-fault-status-bits;
+          enum remote-system-fault-status-bits;
           enum evpn-route-conflict;
           enum transport-tunnel-oper-down;
           enum no-destination-id;
@@ -261,7 +289,7 @@ module srl_nokia-connection-point-pseudowires {
       uses pseudowire-common-fields;
       container signaling {
         description
-          "Signaling configuration for the Pseudowire";
+          "Signaling configuration for the pseudowire";
         leaf virtual-circuit-identifier {
           mandatory true;
           type vc-id;
@@ -273,7 +301,7 @@ module srl_nokia-connection-point-pseudowires {
           case static {
             container static {
               description
-                "Static Pseudowire parameters
+                "Static pseudowire parameters
 
                  The virtual circuit labels are configured on both ends of the
                  pseudowire.";
@@ -291,8 +319,8 @@ module srl_nokia-connection-point-pseudowires {
                   "The value of the configured egress vc label
 
                    The egress virtual circuit mpls label is allocated by the
-                   system when the endpoint signaling is of types TLDP or
-                   BGP-VPLS, or configured if the endpoint signaling is off.";
+                   system when the endpoint signaling is of type TLDP or
+                   configured in this case since the signaling is static.";
               }
             }
           }
@@ -314,18 +342,6 @@ module srl_nokia-connection-point-pseudowires {
                    vlan tag in the inner frame when sending frames over the
                    pseudowire.";
               }
-              leaf send-mac-flush-on-failure {
-                type boolean;
-                default "true";
-                description
-                  "Triggers a MAC address flush indication to the TLDP peers
-
-                   This command enables sending out flush-all-from-me messages to all
-                   Targeted LDP peers included in the MAC-VRF, in the event of physical
-                   interface failures or operationally down events of individual subinterfaces.
-                   This feature provides an LDP-based mechanism for recovering a physical link
-                   failure in a dual-homed connection to a MAC-VRF.";
-              }
               leaf advertise-l2-mtu {
                 type uint16 {
                   range "1450..9500";
@@ -334,7 +350,8 @@ module srl_nokia-connection-point-pseudowires {
                 description
                   "Layer-2 MTU advertised to the remote peer in bytes.
 
-                   The default value signaled for a pseudowire is taken from the oper-mac-vrf-mtu.
+                   The default value signaled for a pseudowire is taken from the oper-mac-vrf-mtu
+                   (in case of a mac-vrf) or from the oper-vpws-mtu (in case of a vpws) parameters.
                    However, that default value is overridden by the value configured with this
                    command.";
               }
@@ -371,8 +388,7 @@ module srl_nokia-connection-point-pseudowires {
             "The value of the operational ingress vc label
 
              The ingress virtual circuit mpls label is allocated by the
-             system when the endpoint signaling is of types TLDP or
-             BGP-VPLS, or configured if the endpoint signaling is
+             system when the signaling is of type TLDP or configured if the signaling is
              static.";
         }
       }
@@ -394,8 +410,7 @@ module srl_nokia-connection-point-pseudowires {
             "The value of the operational egress vc label
 
              The egress virtual circuit mpls label is received via TLDP
-             or BGP when the endpoint signaling is of types TLDP or
-             BGP-VPLS. The value is configured if the endpoint signaling
+             when the signaling is of type TLDP or configured if the signaling
              is static.";
         }
       }

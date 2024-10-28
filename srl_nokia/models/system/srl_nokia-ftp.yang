@@ -12,6 +12,9 @@ module srl_nokia-ftp {
   import srl_nokia-common {
     prefix srl_nokia-comm;
   }
+  import srl_nokia-features {
+    prefix srl_nokia-feat;
+  }
 
   organization
     "Nokia";
@@ -21,6 +24,10 @@ module srl_nokia-ftp {
   description
     "This module defines ftp configurations.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2020-06-30 {
     description
       "SRLinux 20.6.1";
@@ -91,6 +98,7 @@ module srl_nokia-ftp {
 
   grouping ftp-top {
     container ftp-server {
+      if-feature "not srl_nokia-feat:platform-imgmt";
       description
         "Top-level container for FTP server configuration and state";
       presence "Configure FTP";

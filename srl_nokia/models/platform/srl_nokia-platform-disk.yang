@@ -24,6 +24,10 @@ module srl_nokia-platform-disk {
   description
     "This module defines configuration and operational state data related to disks.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2023-10-31 {
     description
       "SRLinux 23.10.1";
@@ -181,6 +185,9 @@ module srl_nokia-platform-disk {
         enum ssd;
         enum hdd;
         enum usb;
+        enum mmc {
+          if-feature "srl-feat:platform-7215-a1";
+        }
       }
     }
     leaf encrypted {

@@ -48,6 +48,10 @@ module srl_nokia-network-instance {
   description
     "This yang file gives a description of a network-instance. This may be a Layer 3 forwarding construct such as a virtual routing and forwarding (VRF) instance, or a Layer 2 instance such as a virtual switch instance (VSI). Mixed Layer 2 and Layer 3 instances are also supported.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -289,7 +293,7 @@ module srl_nokia-network-instance {
         }
       }
       container ip-load-balancing {
-        if-feature "srl-feat:jericho2 or srl-feat:jericho2cp or srl-feat:trident3 or srl-feat:trident4 or srl-feat:future-0-0";
+        if-feature "srl-feat:jericho2 or srl-feat:jericho2cp or srl-feat:trident3 or srl-feat:trident4 or srl-feat:fpcx";
         description
           "Container for IP load-balancing options that are specific to the network-instance";
         list resilient-hash-prefix {
@@ -416,19 +420,19 @@ module srl_nokia-network-instance {
           type srl_nokia-netinst:network-instance-subintf-name;
           description
             "Name of the subinterface bound to this network-instance";
-          must "./interface-ref/interface or not(starts-with(.,'lo') and ../../type = 'srl_nokia-netinst:mac-vrf')" {
+          must "../interface-ref/interface or not(starts-with(.,'lo') and ../../type = 'srl_nokia-netinst:mac-vrf')" {
             error-message "Loopback interfaces cannot be configured on network-instance of type mac-vrf";
           }
-          must "./interface-ref/interface or not(starts-with(.,'system') and ../../type != 'srl_nokia-netinst:default')" {
+          must "../interface-ref/interface or not(starts-with(.,'system') and ../../type != 'srl_nokia-netinst:default')" {
             error-message "System interfaces can only be configured on network-instance of type default";
           }
-          must "./interface-ref/interface or /srl_nokia-if:interface[srl_nokia-if:name=substring-before(current(), '.')]/srl_nokia-if:subinterface[srl_nokia-if:index=substring-after(current(), '.')]/srl_nokia-if:type != 'local-mirror-dest'" {
+          must "../interface-ref/interface or /srl_nokia-if:interface[srl_nokia-if:name=substring-before(current(), '.')]/srl_nokia-if:subinterface[srl_nokia-if:index=substring-after(current(), '.')]/srl_nokia-if:type != 'local-mirror-dest'" {
             error-message "subinterface with type local-mirror-dest cannot be configured on network-instance";
           }
-          must "./interface-ref/interface or not(starts-with(.,'irb') and ../../bridge-table/proxy-arp)" {
+          must "../interface-ref/interface or not(starts-with(.,'irb') and ../../bridge-table/proxy-arp)" {
             error-message "IRB interfaces cannot be configured with proxy-arp";
           }
-          must "./interface-ref/interface or not(starts-with(.,'irb') and ../../bridge-table/proxy-nd)" {
+          must "../interface-ref/interface or not(starts-with(.,'irb') and ../../bridge-table/proxy-nd)" {
             error-message "IRB interfaces cannot be configured with proxy-nd";
           }
         }
@@ -784,6 +788,7 @@ module srl_nokia-network-instance {
 
       grouping connection-point-top {
         list connection-point {
+          max-elements 255;
           if-feature "srl-feat:connection-point";
           must "(../type = 'srl_nokia-netinst:mac-vrf' or ../type = 'srl_nokia-netinst:vpws')" {
             error-message "Connection-point configuration is only possible on network-instance of type mac-vrf or vpws";
@@ -792,13 +797,17 @@ module srl_nokia-network-instance {
             "Connection-point information.";
           key "name";
           leaf name {
-            type srl_nokia-comm:name;
+            type srl_nokia-comm:name {
+              length "1..32";
+            }
             description
               "A unique name identifying the connection-point";
           }
           uses connection-point-bridge-table;
           uses connection-point-oper-state-top;
-          uses srl_nokia-connection-point-pseudowires:pseudowires-top;
+          uses srl_nokia-connection-point-pseudowires:pseudowires-top {
+            if-feature "srl-feat:pseudowire";
+          }
         }
       }
 

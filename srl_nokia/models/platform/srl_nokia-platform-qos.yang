@@ -30,6 +30,10 @@ module srl_nokia-platform-qos {
   description
     "This module defines configuration and operational state related to QoS resources in the system";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -77,17 +81,17 @@ module srl_nokia-platform-qos {
   }
 
   identity classifier-profiles {
-    if-feature "srl-feat:jericho2 or srl-feat:jericho2cp";
+    if-feature "srl-feat:jericho2 or srl-feat:jericho2cp or srl-feat:fpcx";
     base qos-resources;
     description
-      "A classifier-profile resource is used every time a different combination of IPv4 DSCP classifier and IPv6 DSCP classifier is applied to an ingress subinterface of the 7250 IXR IMM. There are 16 of these resources and one is always used by the combination of the default IPv4 DSCP classifier and the default IPv6 DSCP classifier.";
+      "A classifier-profile resource is used every time a different combination of IPv4 DSCP classifier and IPv6 DSCP classifier is applied to an ingress subinterface. One is always used by the combination of the default IPv4 DSCP classifier and the default IPv6 DSCP classifier.";
   }
 
   identity rewrite-profiles {
-    if-feature "srl-feat:jericho2 or srl-feat:jericho2cp";
+    if-feature "srl-feat:jericho2 or srl-feat:jericho2cp or srl-feat:fpcx";
     base qos-resources;
     description
-      "On the 7250 IXR, a rewrite-profile resource is used every time a different combination of IPv4 DSCP rewrite-rule and IPv6 DSCP rewrite-rule is applied to an egress subinterface of the 7250 IXR IMM. There are 32 of these resources.";
+      "A rewrite-profile resource is used every time a different combination of IPv4 DSCP rewrite-rule and IPv6 DSCP rewrite-rule is applied to an egress subinterface.";
   }
 
   identity dscp-classifier-policies {
@@ -98,14 +102,14 @@ module srl_nokia-platform-qos {
   }
 
   identity dscp-mpls-rewrite-policies {
-    if-feature "srl-feat:jericho2 or srl-feat:jericho2cp";
+    if-feature "srl-feat:jericho2 or srl-feat:jericho2cp or srl-feat:fpcx";
     base qos-resources;
     description
-      "A rewrite-policy resource is used every time a different DSCP or MPLS traffic-class rewrite-rule policy is applied to an egress subinterface of the 7250 IXR IMM. There are 32 of these resources.";
+      "A rewrite-policy resource is used every time a different DSCP or MPLS traffic-class rewrite-rule policy is applied to an egress subinterface.";
   }
 
   identity dscp-rewrite-policies {
-    if-feature "srl-feat:platform-7220-d2 or srl-feat:platform-7220-d3 or srl-feat:platform-7220-d4 or srl-feat:platform-7220-d5";
+    if-feature "srl-feat:platform-7220-d2 or srl-feat:platform-7220-d3 or srl-feat:platform-7220-d4 or srl-feat:platform-7220-d5 or srl-feat:fpcx";
     base qos-resources;
     description
       "Every user-defined dscp rewrite policy that is configured uses one of these resources.";
@@ -119,10 +123,24 @@ module srl_nokia-platform-qos {
   }
 
   identity dot1p-rewrite-policies {
-    if-feature "srl-feat:platform-7220-d2 or srl-feat:platform-7220-d3 or srl-feat:platform-7220-d4 or srl-feat:platform-7220-d5";
+    if-feature "srl-feat:platform-7220-d2 or srl-feat:platform-7220-d3 or srl-feat:platform-7220-d4 or srl-feat:platform-7220-d5 or srl-feat:fpcx";
     base qos-resources;
     description
       "Every user-defined dot1p rewrite policy that is configured uses one of these resources";
+  }
+
+  identity input-policers {
+    if-feature "srl-feat:fpcx";
+    base qos-resources;
+    description
+      "Every input-policer that is allocated to the configured subinterfaces based on input-class-map";
+  }
+
+  identity output-class-maps {
+    if-feature "srl-feat:fpcx";
+    base qos-resources;
+    description
+      "Every user-defined output class map that is configured uses one of these resources.";
   }
 
   grouping qos-resource-monitoring {
@@ -169,12 +187,12 @@ module srl_nokia-platform-qos {
             "The name of the QoS resource";
         }
         leaf used {
-          type uint16;
+          type uint32;
           description
             "The number of resources that are in use";
         }
         leaf free {
-          type uint16;
+          type uint32;
           description
             "The number of resources that are unused and available";
         }
@@ -247,12 +265,12 @@ module srl_nokia-platform-qos {
   }
 
   augment "/srl_nokia-platform:platform/srl_nokia-platform-res-mon:resource-monitoring" {
-    if-feature "srl-feat:platform-7220-d2 or srl-feat:platform-7220-d3 or srl-feat:platform-7220-d4 or srl-feat:platform-7220-d5 or srl-feat:jericho2 or srl-feat:jericho2cp";
+    if-feature "srl-feat:platform-7220-d2 or srl-feat:platform-7220-d3 or srl-feat:platform-7220-d4 or srl-feat:platform-7220-d5 or srl-feat:jericho2 or srl-feat:jericho2cp or srl-feat:fpcx";
     uses qos-resource-monitoring;
   }
 
   augment "/srl_nokia-platform:platform/srl_nokia-platform-lc:linecard/srl_nokia-platform-lc:forwarding-complex" {
-    if-feature "srl-feat:platform-7220-d2 or srl-feat:platform-7220-d3 or srl-feat:platform-7220-d4 or srl-feat:platform-7220-d5 or srl-feat:jericho2 or srl-feat:jericho2cp";
+    if-feature "srl-feat:platform-7220-d2 or srl-feat:platform-7220-d3 or srl-feat:platform-7220-d4 or srl-feat:platform-7220-d5 or srl-feat:jericho2 or srl-feat:jericho2cp or srl-feat:fpcx";
     uses qos-utilization;
   }
 

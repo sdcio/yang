@@ -19,6 +19,10 @@ module srl_nokia-common {
     "This module contains a set of Internet address related
      types for use in OpenConfig modules.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -133,7 +137,7 @@ module srl_nokia-common {
   typedef dscp-value {
     description
       "A DiffServ Code Point represented numerically.";
-    type uint8 {
+    type int8 {
       range "0..63";
     }
   }
@@ -279,6 +283,44 @@ module srl_nokia-common {
        or mixed-shortened formats.";
   }
 
+  typedef ipv4-address-unicast {
+    type ipv4-address {
+      pattern '(0|127|22[4-9]|2[3-5][0-9])\..*' {
+        modifier "invert-match";
+      }
+    }
+    description
+      "A unicast IPv4 address in dotted quad notation";
+  }
+
+  typedef ipv6-address-unicast {
+    type ipv6-address {
+      pattern '[0:]+1?|([fF][fF][0-9a-fA-F][0-9a-fA-F].*)' {
+        modifier "invert-match";
+      }
+    }
+    description
+      "A unicast IPv6 address represented as either a full address, shortened or mixed-shortened formats";
+  }
+
+  typedef ipv6-address-unicast-without-local {
+    type ipv6-address-unicast {
+      pattern '[fF][eE][89abAB][0-9a-fA-F].*' {
+        modifier "invert-match";
+      }
+    }
+    description
+      "A unicast IPv6 address represented as either a full address, shortened or mixed-shortened formats. Link-local addresses are not allowed.";
+  }
+
+  typedef ipv6-address-link-local-unicast {
+    type ipv6-address {
+      pattern '[fF][eE][89abAB][0-9a-fA-F].*';
+    }
+    description
+      "A link-local unicast IPv6 address represented as either a full address, shortened or mixed-shortened formats";
+  }
+
   typedef ipv4-address-with-zone {
     srl_nokia-ext:generated-class-name "IpAddressWithZone";
     srl_nokia-ext:generated-class-variant "v4";
@@ -339,8 +381,7 @@ module srl_nokia-common {
             + '[0-9]|25[0-5])/(([0-9])|([1-2][0-9])|(3[0-2]))';
     }
     description
-      "An IPv4 prefix represented in dotted quad notation followed by
-       a slash and a CIDR mask (0 <= mask <= 32).";
+      "An IPv4 prefix represented in dotted quad notation followed by a slash and a CIDR mask (0 <= mask <= 32).";
   }
 
   typedef ipv6-prefix {
@@ -354,9 +395,38 @@ module srl_nokia-common {
             + '(/(([0-9])|([0-9]{2})|(1[0-1][0-9])|(12[0-8])))';
     }
     description
-      "An IPv6 prefix represented in full, shortened, or mixed
-       shortened format followed by a slash and CIDR mask (0 <= mask <=
+      "An IPv6 prefix represented in full, shortened, or mixed shortened format followed by a slash and CIDR mask (0 <= mask <=
        128).";
+  }
+
+  typedef ipv4-prefix-unicast {
+    type ipv4-prefix {
+      pattern '(0\.[0-9.]+/([8-9]|[1-3][0-9])|(127|22[4-9]|2[3-5][0-9])\..*)' {
+        modifier "invert-match";
+      }
+    }
+    description
+      "A unicast IPv4 prefix represented in dotted quad notation followed by a slash and a CIDR mask (0 <= mask <= 32)";
+  }
+
+  typedef ipv6-prefix-unicast {
+    type ipv6-prefix {
+      pattern '[0:]+1?/128|[fF][fF][0-9a-fA-F][0-9a-fA-F].*/([89]|[1-9][0-9]+)' {
+        modifier "invert-match";
+      }
+    }
+    description
+      "A unicast IPv6 prefix represented in full, shortened, or mixed shortened format followed by a slash and CIDR mask (0 <= mask <= 128)";
+  }
+
+  typedef ipv6-prefix-unicast-without-local {
+    type ipv6-prefix-unicast {
+      pattern '[fF][eE][89abAB][0-9a-fA-F].*/[1-9][0-9]+' {
+        modifier "invert-match";
+      }
+    }
+    description
+      "A unicast IPv6 prefix represented in full, shortened, or mixed shortened format followed by a slash and CIDR mask (0 <= mask <= 128). Link-local prefixes are not allowed.";
   }
 
   typedef ip-address {
@@ -366,6 +436,24 @@ module srl_nokia-common {
     }
     description
       "An IPv4 or IPv6 address with no prefix specified.";
+  }
+
+  typedef ip-address-unicast {
+    type union {
+      type ipv4-address-unicast;
+      type ipv6-address-unicast;
+    }
+    description
+      "A unicast IPv4 or IPv6 address with no prefix specified";
+  }
+
+  typedef ip-address-unicast-without-local {
+    type union {
+      type ipv4-address-unicast;
+      type ipv6-address-unicast-without-local;
+    }
+    description
+      "A unicast IPv4 or IPv6 address with no prefix specified. Link-local addresses are not allowed.";
   }
 
   typedef ipv4-address-excluding-all-zero {
@@ -405,6 +493,24 @@ module srl_nokia-common {
     }
     description
       "An IPv4 or IPv6 prefix.";
+  }
+
+  typedef ip-prefix-unicast {
+    type union {
+      type ipv4-prefix-unicast;
+      type ipv6-prefix-unicast;
+    }
+    description
+      "A unicast IPv4 or IPv6 prefix";
+  }
+
+  typedef ip-prefix-unicast-without-local {
+    type union {
+      type ipv4-prefix-unicast;
+      type ipv6-prefix-unicast-without-local;
+    }
+    description
+      "A unicast IPv4 or IPv6 prefix. Link-local prefixes are not allowed.";
   }
 
   typedef ipv4-prefix-with-host-bits {
@@ -1043,7 +1149,7 @@ module srl_nokia-common {
 
   typedef alphanumeric {
     type string {
-      pattern "[A-Za-z0-9!@#$%^&()|+=`~.,'/_:;?-][A-Za-z0-9 !@#$%^&()|+=`~.,'/_:;?-]*";
+      pattern '[A-Za-z0-9!@#$%^&()|+=`~.,/_:;?-][A-Za-z0-9 !@#$%^&()|+=`~.,/_:;?-]*';
     }
     description
       "A simple, one-line string that does not contain any control characters";
@@ -1067,7 +1173,7 @@ module srl_nokia-common {
 
   typedef name-without-space {
     type name {
-      pattern "[A-Za-z0-9!@#$%^&()|+=`~.,'/_:;?-][A-Za-z0-9!@#$%^&()|+=`~.,'/_:;?-]*";
+      pattern '[A-Za-z0-9!@#$%^&()|+=`~.,/_:;?-][A-Za-z0-9!@#$%^&()|+=`~.,/_:;?-]*';
     }
     description
       "A user provided name without space";
@@ -1075,7 +1181,7 @@ module srl_nokia-common {
 
   typedef restricted-name {
     type string {
-      pattern "[A-Za-z0-9!@#$%^&()|+=`~.,'_:;?-][A-Za-z0-9 !@#$%^&()|+=`~.,'_:;?-]*";
+      pattern '[A-Za-z0-9!@#$%^&()|+=`~.,_:;?-][A-Za-z0-9 !@#$%^&()|+=`~.,_:;?-]*';
       length "1..247";
     }
     description
@@ -1280,10 +1386,12 @@ module srl_nokia-common {
       "BGP Ethernet VPN (EVPN)";
   }
 
-  identity bgp-vpn {
+  identity bgp-ipvpn {
+    if-feature "srl-feat:ipvpn";
     base ip-route-type;
+    base routing-policy-protocol-match-type;
     description
-      "Border Gateway Protocol VPN routes";
+      "BGP IP VPN";
   }
 
   identity dhcp {
@@ -1406,7 +1514,6 @@ module srl_nokia-common {
   identity sr-ospfv2 {
     if-feature "srl-feat:future-0-0";
     base tunnel-type;
-    base bgp-next-hop-resolution-tunnel-type;
     description
       "Segment routing using MPLS dataplane, programmed by OSPFv2";
   }
@@ -1414,7 +1521,6 @@ module srl_nokia-common {
   identity sr-ospfv3 {
     if-feature "srl-feat:future-0-0";
     base tunnel-type;
-    base bgp-next-hop-resolution-tunnel-type;
     description
       "Segment routing using MPLS dataplane, programmed by OSPFv3";
   }
@@ -1425,22 +1531,22 @@ module srl_nokia-common {
       "Segment routing using MPLS dataplane, programmed by segment routing manager.";
   }
 
-  identity sr-policy-mpls-colored {
+  identity te-policy-sr-mpls-colored {
     if-feature "srl-feat:segment-routing-colored-te-policies";
     base tunnel-type;
     base bgp-next-hop-resolution-tunnel-type;
     base mpls-label-entry-type;
     description
-      "Tunnel setup using TE-POLICY.";
+      "Tunnel setup with sr-mpls-colored type TE-Policy. Labeled Traffic Engineering Policy with color";
   }
 
-  identity sr-policy-mpls-uncolored {
+  identity te-policy-sr-mpls-uncolored {
     if-feature "srl-feat:te-policies";
     base tunnel-type;
     base bgp-next-hop-resolution-tunnel-type;
     base mpls-label-entry-type;
     description
-      "Tunnel setup using TE-POLICY.";
+      "Tunnel setup with sr-mpls-uncolored type TE-Policy. Labeled Traffic Engineering Policy with primary and secondary segment-lists.";
   }
 
   identity static {
@@ -1458,7 +1564,6 @@ module srl_nokia-common {
 
   identity vxlan {
     base tunnel-type;
-    base bgp-next-hop-resolution-tunnel-type;
     description
       "Tunnels based on VXLAN encapsulation";
   }
@@ -1521,6 +1626,20 @@ module srl_nokia-common {
       "Route target constraint routes (AFI 1, SAFI 132)";
   }
 
+  identity sr-policy-ipv4 {
+    if-feature "srl-feat:bgp-srte-policy";
+    base bgp-address-family;
+    description
+      "SR-TE Policy (AFI 1, SAFI 73)";
+  }
+
+  identity sr-policy-ipv6 {
+    if-feature "srl-feat:bgp-srte-policy";
+    base bgp-address-family;
+    description
+      "SR-TE Policy (AFI 2, SAFI 73)";
+  }
+
   typedef queue-index {
     type uint8 {
       range "0..7";
@@ -1558,6 +1677,9 @@ module srl_nokia-common {
       }
       enum eth-cfm {
         value 10;
+      }
+      enum irb-interface-vrrp {
+        value 11;
       }
     }
     description
@@ -1689,7 +1811,7 @@ module srl_nokia-common {
       }
       enum multicast {
         value 3;
-        if-feature "srl-feat:trident3 or srl-feat:future-0-0";
+        if-feature "srl-feat:trident3 or srl-feat:fpcx";
         description
           "A packet is 'multicast' if the destination address is a multicast address
 
@@ -1881,5 +2003,27 @@ module srl_nokia-common {
   typedef component-name {
     srl_nokia-ext:generated-class-name "ComponentName";
     type string;
+  }
+
+  typedef protocol-origin-type {
+    type enumeration {
+      enum pcep {
+        value 10;
+        description
+          "PCEP used as signalling mechanism for the candidate path";
+      }
+      enum bgp {
+        value 20;
+        description
+          "BGP used as signalling mechanism for the candidate path";
+      }
+      enum local {
+        value 30;
+        description
+          "Management interface used for candidate path instantiation";
+      }
+    }
+    description
+      "Originating protocol type";
   }
 }

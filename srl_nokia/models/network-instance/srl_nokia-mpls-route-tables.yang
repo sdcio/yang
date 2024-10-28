@@ -42,6 +42,10 @@ module srl_nokia-mpls-route-tables {
   description
     "A model describing the MPLS routing tables of a network instance.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2023-07-31 {
     description
       "SRLinux 23.7.1";
@@ -98,7 +102,7 @@ module srl_nokia-mpls-route-tables {
       }
     }
     leaf next-ethernet-segment {
-      if-feature "srl_nokia-feat:evpn";
+      if-feature "srl_nokia-feat:evpn-mh";
       type leafref {
         path "/srl_nokia-system:system/srl_nokia-system-netinst:network-instance/srl_nokia-system-netinst:protocols/srl_nokia-system-netinst:evpn/srl_nokia-eth-seg:ethernet-segments/srl_nokia-eth-seg:bgp-instance/srl_nokia-eth-seg:ethernet-segment/srl_nokia-eth-seg:name";
       }

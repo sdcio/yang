@@ -19,6 +19,10 @@ module srl_nokia-qos-policers {
     "Nokia SR Linux Support
      Web: <http://www.nokia.com>";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -84,7 +88,7 @@ module srl_nokia-qos-policers {
 
   grouping policer-policies-top {
     container policer-policies {
-      if-feature "srl-feat:future-0-0";
+      if-feature "srl-feat:qos-policer-policies";
       description
         "Policer-policies for subinterface level traffic metering";
       container threshold-separation-policies {
@@ -112,7 +116,7 @@ module srl_nokia-qos-policers {
             leaf threshold-factor {
               type decimal64 {
                 fraction-digits 2;
-                range "0..1";
+                range "0..2";
               }
               description
                 "Threshold-factor for the policer bucket indicating fraction of mbs";
@@ -141,18 +145,6 @@ module srl_nokia-qos-policers {
           }
           units "bytes";
           default "18000";
-          must '. > ../unfair-offset' {
-            error-message "threshold-separation should be > unfair-offset";
-          }
-        }
-        leaf unfair-offset {
-          description
-            "Defines the byte offset for the policer calculation in case there is a not even distribution of BW between different child policers. Typically this should be set to maximum frame length";
-          type uint32 {
-            range "0..1398100";
-          }
-          units "bytes";
-          default "9000";
         }
       }
       list policer-policy {
@@ -281,6 +273,9 @@ module srl_nokia-qos-policers {
             default "64";
             description
               "The committed information rate (CIR) of the policer, defined in kilobits (1024 bits) per second";
+            must "current() != 0 or ../algorithm-type != 'trtcm2'" {
+              error-message "cannot be 0 when algorithm-type is trtcm2";
+            }
           }
           leaf excess-rate-kbps {
             type uint32 {
@@ -306,7 +301,7 @@ module srl_nokia-qos-policers {
           }
           leaf committed-burst-size {
             type uint32 {
-              range "64..253952";
+              range "64..190941";
             }
             units "bytes";
             default "40000";
@@ -334,16 +329,12 @@ module srl_nokia-qos-policers {
             description
               "Defines the number and type of the counters collected for the policer. The modes are mutually exclusive";
             type enumeration {
-              enum minimal {
-                description
-                  "This statisics-mode counts only forwarded and discarded packets/octets per policer";
-              }
               enum extended {
                 description
                   "This statistics-mode counts forwarded packets/octets on per profile basis. The discards are counted as an aggregate";
               }
             }
-            default "minimal";
+            default "extended";
           }
         }
         container parent-policer {
@@ -403,14 +394,6 @@ module srl_nokia-qos-policers {
                 }
                 default "0";
               }
-              leaf weight {
-                description
-                  "Weight of the input policer";
-                type uint8 {
-                  range "1..100";
-                }
-                default "1";
-              }
             }
           }
         }
@@ -419,7 +402,13 @@ module srl_nokia-qos-policers {
   }
 
   grouping policer-counters {
+    leaf last-clear {
+      type srl_nokia-comm:date-and-time-delta;
+      description
+        "Timestamp of the last time the statistics associated with this policer were cleared";
+    }
     leaf accepted-packets {
+      if-feature "srl-feat:future-0-0";
       type srl_nokia-comm:zero-based-counter64;
       description
         "The number of packets that were accepted by the policer, counting all input profiles.
@@ -427,6 +416,7 @@ module srl_nokia-qos-policers {
          Not available in extended statistics-mode";
     }
     leaf accepted-octets {
+      if-feature "srl-feat:future-0-0";
       type srl_nokia-comm:zero-based-counter64;
       description
         "The number of octets in packets that were accepted by the policer, counting all input profiles.

@@ -24,6 +24,10 @@ module srl_nokia-boot {
   description
     "This module defines configuration and operational state data related to the booting the system.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2023-07-31 {
     description
       "SRLinux 23.7.1";
@@ -132,11 +136,42 @@ module srl_nokia-boot {
     }
   }
 
+  grouping boot-fips-top {
+    container fips-140 {
+      description
+        "Boot up the router in fips-provider mode
+
+         In fips-provider mode only fips approved algorithms are allowed.
+         In addition for fip-provider mode to take effect a reboot is of the router is needed.";
+      leaf admin-state {
+        type srl-comm:admin-state;
+        default "disable";
+        description
+          "This leaf contains the configured, desired state of the fips-provider.";
+      }
+      leaf oper-state {
+        config false;
+        type srl-comm:oper-state;
+        description
+          "This leaf contains the operational state of fips-provider.";
+      }
+      leaf oper-down-reason {
+        config false;
+        type enumeration {
+          enum unknown;
+        }
+        description
+          "The reason for not enabling fips operational down";
+      }
+    }
+  }
+
   grouping boot-top {
     container boot {
       description
         "Top-level container for configuration and state data related to booting the system";
       uses boot-images-top;
+      uses boot-fips-top;
       uses boot-autoboot-top;
     }
   }

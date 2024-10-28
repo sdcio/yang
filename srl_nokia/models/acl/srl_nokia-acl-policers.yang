@@ -28,6 +28,10 @@ module srl_nokia-acl-policers {
     "Nokia SR Linux Support
      Web: <http://www.nokia.com>";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -288,10 +292,14 @@ module srl_nokia-acl-policers {
 
   grouping subinterface-qos-policer {
     container policer-templates {
+      presence "acl policer templates";
       description
         "acl policers";
+      must 'string(../../interface-ref/subinterface) != ""' {
+        error-message "Attachment of policier-templates, not permitted for interfaces";
+      }
       leaf policer-template {
-        if-feature "not srl_nokia-feat:future-0-0 and srl_nokia-feat:subif-policer";
+        if-feature "not srl_nokia-feat:fpcx and srl_nokia-feat:subif-policer";
         must "not(starts-with(../../../../../srl_nokia-if:name,'irb'))" {
           error-message "Not supported on IRB interfaces";
         }
@@ -305,7 +313,7 @@ module srl_nokia-acl-policers {
         }
       }
       list policer {
-        if-feature "not srl_nokia-feat:future-0-0";
+        if-feature "not srl_nokia-feat:fpcx";
         config false;
         description
           "The list of policer instances belonging to the template definition.";

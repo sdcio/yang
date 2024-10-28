@@ -20,6 +20,10 @@ module srl_nokia-policy-types {
      policy.  It can be imported by modules that contain protocol-
      specific policy match and actions.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -160,6 +164,13 @@ module srl_nokia-policy-types {
   typedef bgp-next-hop-type {
     type union {
       type srl_nokia-comm:ip-address;
+      type enumeration {
+        enum self {
+          if-feature "srl_nokia-feat:routing-policy-bgp-next-hop-self-action";
+          description
+            "Special designation for local router's own address, i.e., next-hop-self";
+        }
+      }
     }
     description
       "Type definition for specifying the BGP next-hop address in policy actions";

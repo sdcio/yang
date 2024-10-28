@@ -33,6 +33,10 @@ module srl_nokia-pcep {
   description
     "Configuration and state related to the use and propagation of Path Computation Element(PCC) information.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -329,7 +333,7 @@ module srl_nokia-pcep {
       config false;
       description
         "The value indicates the internet address being used by this PCEP Peer.";
-      type srl_nokia-comm:ip-address-excluding-all-zero;
+      type srl_nokia-comm:ip-address-unicast-without-local;
     }
   }
 
@@ -406,13 +410,13 @@ module srl_nokia-pcep {
       config false;
       description
         "IP address for a given segment in ERO or RRO";
-      type srl_nokia-comm:ip-address;
+      type srl_nokia-comm:ip-address-unicast-without-local;
     }
     leaf router-id {
       config false;
       description
         "Router-id for a given unnumbered segment in ERO or RRO";
-      type srl_nokia-comm:ip-address;
+      type srl_nokia-comm:ip-address-unicast-without-local;
     }
     leaf as-number {
       config false;
@@ -442,13 +446,13 @@ module srl_nokia-pcep {
       config false;
       description
         "Local IP address for a given segment in ERO or RRO";
-      type srl_nokia-comm:ip-address;
+      type srl_nokia-comm:ip-address-unicast-without-local;
     }
     leaf remote-prefix {
       config false;
       description
         "Remote IP address for a given segment in ERO or RRO";
-      type srl_nokia-comm:ip-address;
+      type srl_nokia-comm:ip-address-unicast-without-local;
     }
   }
 
@@ -477,7 +481,7 @@ module srl_nokia-pcep {
       config false;
       description
         "The extended tunnel identifier";
-      type srl_nokia-comm:ip-address;
+      type srl_nokia-comm:ip-address-unicast;
     }
     leaf name {
       config false;
@@ -489,13 +493,13 @@ module srl_nokia-pcep {
       config false;
       description
         "The sender address of the LSP";
-      type srl_nokia-comm:ip-address;
+      type srl_nokia-comm:ip-address-unicast-without-local;
     }
     leaf destination-address {
       config false;
       description
         "The destination address of the LSP";
-      type srl_nokia-comm:ip-address;
+      type srl_nokia-comm:ip-address-unicast-without-local;
     }
     leaf delegated {
       config false;
@@ -507,7 +511,7 @@ module srl_nokia-pcep {
       config false;
       description
         "The peer address to which the PCC has delegated the LSP";
-      type srl_nokia-comm:ip-address;
+      type srl_nokia-comm:ip-address-unicast-without-local;
     }
     leaf oper-state {
       config false;
@@ -660,7 +664,7 @@ module srl_nokia-pcep {
       config false;
       description
         "The extended tunnel identifier";
-      type srl_nokia-comm:ip-address;
+      type srl_nokia-comm:ip-address-unicast;
     }
     leaf lsp-name {
       config false;
@@ -674,7 +678,7 @@ module srl_nokia-pcep {
         "The source address of the path for which path computation is requested
 
          It is the END-POINTS object used in PCReq message.";
-      type srl_nokia-comm:ip-address;
+      type srl_nokia-comm:ip-address-unicast-without-local;
     }
     leaf destination-address {
       config false;
@@ -682,7 +686,7 @@ module srl_nokia-pcep {
         "The destination address of the path for which the path computation is requested
 
          It is the END-POINTS object used in PCReq message.";
-      type srl_nokia-comm:ip-address;
+      type srl_nokia-comm:ip-address-unicast-without-local;
     }
     leaf message-state {
       config false;
@@ -1153,7 +1157,7 @@ module srl_nokia-pcep {
     leaf ip-address {
       description
         "The address of the PCE peer";
-      type srl_nokia-comm:ip-address-excluding-all-zero;
+      type srl_nokia-comm:ip-address-unicast-without-local;
     }
   }
 
@@ -1161,7 +1165,9 @@ module srl_nokia-pcep {
     leaf association-name {
       description
         "Association name";
-      type srl_nokia-comm:name;
+      type srl_nokia-comm:name {
+        length "1..32";
+      }
     }
   }
 
@@ -1207,7 +1213,7 @@ module srl_nokia-pcep {
       }
       units "seconds";
       default "120";
-      must '(. > ../keepalive)' {
+      must '(. >= ../keepalive)' {
         error-message "Dead-timer cannot be less than keepalive";
       }
     }
@@ -1248,6 +1254,7 @@ module srl_nokia-pcep {
       }
     }
     container pce-associations {
+      if-feature "srl-feat:pcep-pcc-pce-association";
       description
         "Configure associations to be used with PCE";
       list diversity {
@@ -1277,7 +1284,7 @@ module srl_nokia-pcep {
     leaf local-address {
       description
         "Configure local IP to be used for PCE peering";
-      type srl_nokia-comm:ip-address-excluding-all-zero;
+      type srl_nokia-comm:ip-address-unicast-without-local;
     }
     leaf preference {
       description
@@ -1289,21 +1296,21 @@ module srl_nokia-pcep {
       }
       default "0";
     }
-    leaf route-preference {
-      description
-        "Route preference inband / outband";
-      type enumeration {
-        enum inband {
-          value 1;
-        }
-        enum outband {
-          value 2;
-        }
-        enum both {
-          value 3;
-        }
+    leaf network-instance {
+      type leafref {
+        path "/srl_nokia-netinst:network-instance/srl_nokia-netinst:name";
       }
-      default "both";
+      must 'not(/srl_nokia-netinst:network-instance[srl_nokia-netinst:name=current()]/srl_nokia-netinst:type = "srl_nokia-netinst:mac-vrf")' {
+        error-message "PCE cannot be in a network-instance of type 'mac-vrf'";
+      }
+      must "(/srl_nokia-netinst:network-instance[srl_nokia-netinst:name=current()]/srl_nokia-netinst:type = \"srl_nokia-netinst:default\" or
+                                (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name=current()]/srl_nokia-netinst:type != \"srl_nokia-netinst:default\"
+                                    and current() = \"mgmt\"))" {
+        error-message "PCE cannot be in a network-instance other than 'default' or 'mgmt'";
+      }
+      description
+        "Reference to a configured network-instance used for reachability to PCE
+         This network-instance must already exist in the system.";
     }
   }
 
@@ -1364,7 +1371,7 @@ module srl_nokia-pcep {
     leaf association-source {
       description
         "Associaiton Source for the association";
-      type srl_nokia-comm:ip-address-excluding-all-zero;
+      type srl_nokia-comm:ip-address-unicast-without-local;
     }
   }
 
@@ -1401,7 +1408,7 @@ module srl_nokia-pcep {
     }
   }
 
-  augment "/srl_nokia-netinst:network-instance/srl_nokia-te:traffic-engineering" {
+    augment "/srl_nokia-netinst:network-instance/srl_nokia-netinst:protocols" {
     uses pcep-top;
   }
 }

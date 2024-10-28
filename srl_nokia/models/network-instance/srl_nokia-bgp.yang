@@ -42,6 +42,10 @@ module srl_nokia-bgp {
   description
     "This yang file models configuration and state of the BGP protocol";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -107,17 +111,37 @@ module srl_nokia-bgp {
       "Integer indicating a percentage value";
   }
 
+  typedef cluster-id-type {
+    type union {
+      type uint32 {
+        range "1..max" {
+          error-message "cluster-id cannot be 0";
+        }
+      }
+      type srl_nokia-comm:dotted-quad {
+        pattern '^[0.]+$' {
+          modifier "invert-match";
+          error-message "cluster-id must be IPv4 address different than 0.0.0.0";
+        }
+      }
+    }
+  }
+
   grouping bgp-policy {
-    leaf export-policy {
+    leaf-list export-policy {
       description
         "Apply an export policy to advertised BGP routes";
+      ordered-by user;
+      max-elements 14;
       type leafref {
         path "/srl-rpol:routing-policy/srl-rpol:policy/srl-rpol:name";
       }
     }
-    leaf import-policy {
+    leaf-list import-policy {
       description
         "Apply an import policy to received BGP routes";
+      ordered-by user;
+      max-elements 14;
       type leafref {
         path "/srl-rpol:routing-policy/srl-rpol:policy/srl-rpol:name";
       }
@@ -125,18 +149,22 @@ module srl_nokia-bgp {
   }
 
   grouping bgp-afi-safi-policy {
-    leaf export-policy {
+    leaf-list export-policy {
       if-feature "srl_nokia-feat:bgp-afi-safi-policy";
       description
         "Apply an export policy to advertised BGP routes";
+      ordered-by user;
+      max-elements 14;
       type leafref {
         path "/srl-rpol:routing-policy/srl-rpol:policy/srl-rpol:name";
       }
     }
-    leaf import-policy {
+    leaf-list import-policy {
       if-feature "srl_nokia-feat:bgp-afi-safi-policy";
       description
         "Apply an import policy to received BGP routes";
+      ordered-by user;
+      max-elements 14;
       type leafref {
         path "/srl-rpol:routing-policy/srl-rpol:policy/srl-rpol:name";
       }
@@ -269,7 +297,7 @@ module srl_nokia-bgp {
           "Remove the prefix SID optional transitive attribute in all received and sent routes to this peer, or group of peers";
         type boolean;
         default "false";
-        must ". = false() or current()/../../../../../srl_nokia-netinst:type = 'default'" {
+        must ". = false() or current()/../../../../../srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
           error-message "block-prefix-sid cannot be enabled in network instance other than default";
         }
       }
@@ -284,7 +312,7 @@ module srl_nokia-bgp {
         description
           "Remove the prefix SID optional transitive attribute in all received and sent routes to this peer, or group of peers";
         type boolean;
-        must "current()/../../../../../srl_nokia-netinst:type = 'default'" {
+        must "current()/../../../../../srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
           error-message "block-prefix-sid cannot be configured in network instance other than default";
         }
       }
@@ -306,6 +334,19 @@ module srl_nokia-bgp {
       leaf admin-state {
         type srl_nokia-comm:admin-state;
         default "enable";
+        must ". = 'disable' or
+              (((not(../afi-safi[afi-safi-name='ipv4-unicast']/admin-state) and ../../afi-safi[afi-safi-name='ipv4-unicast']/admin-state = 'enable') or (../afi-safi[afi-safi-name='ipv4-unicast']/admin-state = 'enable')) or
+              ((not(../afi-safi[afi-safi-name='ipv6-unicast']/admin-state) and ../../afi-safi[afi-safi-name='ipv6-unicast']/admin-state = 'enable') or (../afi-safi[afi-safi-name='ipv6-unicast']/admin-state = 'enable')) or
+              ((not(../afi-safi[afi-safi-name='evpn']/admin-state) and ../../afi-safi[afi-safi-name='evpn']/admin-state = 'enable') or (../afi-safi[afi-safi-name='evpn']/admin-state = 'enable')) or
+              ((not(../afi-safi[afi-safi-name='l3vpn-ipv4-unicast']/admin-state) and ../../afi-safi[afi-safi-name='l3vpn-ipv4-unicast']/admin-state = 'enable') or (../afi-safi[afi-safi-name='l3vpn-ipv4-unicast']/admin-state = 'enable')) or
+              ((not(../afi-safi[afi-safi-name='l3vpn-ipv6-unicast']/admin-state) and ../../afi-safi[afi-safi-name='l3vpn-ipv6-unicast']/admin-state = 'enable') or (../afi-safi[afi-safi-name='l3vpn-ipv6-unicast']/admin-state = 'enable')) or
+              ((not(../afi-safi[afi-safi-name='ipv4-labeled-unicast']/admin-state) and ../../afi-safi[afi-safi-name='ipv4-labeled-unicast']/admin-state = 'enable') or (../afi-safi[afi-safi-name='ipv4-labeled-unicast']/admin-state = 'enable')) or
+              ((not(../afi-safi[afi-safi-name='ipv6-labeled-unicast']/admin-state) and ../../afi-safi[afi-safi-name='ipv6-labeled-unicast']/admin-state = 'enable') or (../afi-safi[afi-safi-name='ipv6-labeled-unicast']/admin-state = 'enable')) or
+              ((not(../afi-safi[afi-safi-name='route-target']/admin-state) and ../../afi-safi[afi-safi-name='route-target']/admin-state = 'enable') or (../afi-safi[afi-safi-name='route-target']/admin-state = 'enable')) or
+              ((not(../afi-safi[afi-safi-name='sr-policy-ipv4']/admin-state) and ../../afi-safi[afi-safi-name='sr-policy-ipv4']/admin-state = 'enable') or (../afi-safi[afi-safi-name='sr-policy-ipv4']/admin-state = 'enable')) or
+              ((not(../afi-safi[afi-safi-name='sr-policy-ipv6']/admin-state) and ../../afi-safi[afi-safi-name='sr-policy-ipv6']/admin-state = 'enable') or (../afi-safi[afi-safi-name='sr-policy-ipv6']/admin-state = 'enable')))" {
+          error-message "One of the address families must be enabled.";
+        }
         description
           "Administratively enable or disable the peer group
 
@@ -438,6 +479,7 @@ module srl_nokia-bgp {
         description
           "Options related to methods of detecting BGP session failure";
         leaf enable-bfd {
+          if-feature "srl_nokia-feat:bfd";
           type boolean;
           description
             "The true setting enables Bi-directional Forwarding Detection on BGP sessions belonging to the peer group";
@@ -512,23 +554,29 @@ module srl_nokia-bgp {
           }
           description
             "The name of a BGP address family, which translates to a specific AFI value and a specific SAFI value";
-          must "not(. = 'evpn') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'evpn') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "EVPN is not supported in network instances other than default";
           }
-          must "not(. = 'l3vpn-ipv4-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'l3vpn-ipv4-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "L3VPN is not supported in network instances other than default";
           }
-          must "not(. = 'l3vpn-ipv6-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'l3vpn-ipv6-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "L3VPN is not supported in network instances other than default";
           }
-          must "not(. = 'ipv4-labeled-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'ipv4-labeled-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "Label-ipv4 is not supported in network instances other than default";
           }
-          must "not(. = 'ipv6-labeled-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'ipv6-labeled-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "Label-ipv6 is not supported in network instances other than default";
           }
-          must "not(. = 'route-target') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'route-target') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "route-target is not supported in network instances other than default";
+          }
+          must "not(. = 'sr-policy-ipv4') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
+            error-message "sr-policy-ipv4 is not supported in network instances other than default";
+          }
+          must "not(. = 'sr-policy-ipv6') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
+            error-message "sr-policy-ipv6 is not supported in network instances other than default";
           }
         }
         leaf admin-state {
@@ -545,24 +593,68 @@ module srl_nokia-bgp {
             type boolean;
             description
               "Enable capability negotiation to receive multiple path advertisements from a single peer for a single NLRI belonging to the AFI/SAFI";
-            must "../../afi-safi-name = 'ipv4-unicast' or ../../afi-safi-name = 'ipv6-unicast'" {
-              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-for-all-afi-safi";
-              error-message "add-paths is not supported for address families other than IPv4 unicast and IPv6 unicast";
+            must "../../afi-safi-name != 'ipv4-labeled-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-labeled-unicast";
+              error-message "add-paths is not supported for address familiy ipv4-labeled-unicast";
+            }
+            must "../../afi-safi-name != 'ipv6-labeled-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-labeled-unicast";
+              error-message "add-paths is not supported for address familiy ipv6-labeled-unicast";
+            }
+            must "../../afi-safi-name != 'l3vpn-ipv4-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-l3vpn";
+              error-message "add-paths is not supported for address familiy l3vpn-ipv4-unicast";
+            }
+            must "../../afi-safi-name != 'l3vpn-ipv6-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-l3vpn";
+              error-message "add-paths is not supported for address familiy l3vpn-ipv6-unicast";
+            }
+            must "../../afi-safi-name != 'evpn'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-evpn";
+              error-message "add-paths is not supported for address familiy evpn";
             }
             must "../../afi-safi-name != 'route-target'" {
               error-message "add-paths is not supported for address family route-target";
+            }
+            must "../../afi-safi-name != 'sr-policy-ipv4'" {
+              error-message "add-paths is not supported for address family sr-policy-ipv4";
+            }
+            must "../../afi-safi-name != 'sr-policy-ipv6'" {
+              error-message "add-paths is not supported for address family sr-policy-ipv6";
             }
           }
           leaf send {
             type boolean;
             description
               "Enable capability negotiation to send multiple path advertisements to a single peer for a single NLRI belonging to the AFI/SAFI";
-            must "../../afi-safi-name = 'ipv4-unicast' or ../../afi-safi-name = 'ipv6-unicast'" {
-              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-for-all-afi-safi";
-              error-message "add-paths is not supported for address families other than IPv4 unicast and IPv6 unicast";
+            must "../../afi-safi-name != 'ipv4-labeled-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-labeled-unicast";
+              error-message "add-paths is not supported for address familiy ipv4-labeled-unicast";
+            }
+            must "../../afi-safi-name != 'ipv6-labeled-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-labeled-unicast";
+              error-message "add-paths is not supported for address familiy ipv6-labeled-unicast";
+            }
+            must "../../afi-safi-name != 'l3vpn-ipv4-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-l3vpn";
+              error-message "add-paths is not supported for address familiy l3vpn-ipv4-unicast";
+            }
+            must "../../afi-safi-name != 'l3vpn-ipv6-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-l3vpn";
+              error-message "add-paths is not supported for address familiy l3vpn-ipv6-unicast";
+            }
+            must "../../afi-safi-name != 'evpn'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-evpn";
+              error-message "add-paths is not supported for address familiy evpn";
             }
             must "../../afi-safi-name != 'route-target'" {
               error-message "add-paths is not supported for address family route-target";
+            }
+            must "../../afi-safi-name != 'sr-policy-ipv4'" {
+              error-message "add-paths is not supported for address family sr-policy-ipv4";
+            }
+            must "../../afi-safi-name != 'sr-policy-ipv6'" {
+              error-message "add-paths is not supported for address family sr-policy-ipv6";
             }
           }
           choice selection-algorithm {
@@ -794,7 +886,7 @@ module srl_nokia-bgp {
             "Options related to the EVPN address family";
           leaf advertise-ipv6-next-hops {
             type boolean;
-            must "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+            must "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
               error-message "EVPN is not supported in network instances other than default";
             }
             description
@@ -810,7 +902,7 @@ module srl_nokia-bgp {
                 range "1..4294967295";
               }
               default "4294967295";
-              must ". = 4294967295 or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default')" {
+              must ". = 4294967295 or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
                 error-message "EVPN is not supported in network instances other than default";
               }
               description
@@ -819,12 +911,29 @@ module srl_nokia-bgp {
             leaf warning-threshold-pct {
               type percentage;
               default "90";
-              must ". = 90 or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default')" {
+              must ". = 90 or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
                 error-message "EVPN is not supported in network instances other than default";
               }
               description
                 "When the number of EVPN routes received from the peer (counting routes accepted and rejected by import policy) reaches this percentage of the max-received-routes limit, BGP raises a warning log event";
             }
+          }
+          leaf default-received-encapsulation {
+            if-feature "srl_nokia-feat:nhsrr-evpn";
+            type enumeration {
+              enum vxlan {
+                value 1;
+              }
+              enum mpls {
+                value 2;
+              }
+            }
+            description
+              "Indicates the encapsulation considered when the routes are received without BGP encapsulation extended community
+
+               Most EVPN routes are usually received with a BGP encapsulation extended community that indicates the encapsulation
+               and therefore how to interpret the value in the received Label fields of the routes. If no encapsulation is
+               received, BGP will validate the route as MPLS or VXLAN or SRv6 depending on how this command is configured.";
           }
         }
         container route-target {
@@ -845,7 +954,7 @@ module srl_nokia-bgp {
                 range "1..4294967295";
               }
               default "4294967295";
-              must ". = 4294967295 or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default')" {
+              must ". = 4294967295 or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
                 error-message "RTC is not supported in network instances other than default";
               }
               description
@@ -853,7 +962,7 @@ module srl_nokia-bgp {
             }
             leaf warning-threshold-pct {
               type percentage;
-              must ". = 90 or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default')" {
+              must ". = 90 or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
                 error-message "RTC is not supported in network instances other than default";
               }
               default "90";
@@ -866,7 +975,7 @@ module srl_nokia-bgp {
               default "false";
               description
                 "When false the session is immediately torn down when the number of received RTC routes exceeds the configured limit.";
-              must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default')" {
+              must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
                 error-message "RTC is not supported in network instances other than default";
               }
             }
@@ -922,10 +1031,7 @@ module srl_nokia-bgp {
         leaf cluster-id {
           description
             "The cluster-id to insert into the CLUSTER_LIST attribute when reflecting routes received by or sent to each client in the peer-group. The default is inherited from instance level configuration.";
-          type union {
-            type uint32;
-            type srl_nokia-comm:dotted-quad;
-          }
+          type cluster-id-type;
         }
       }
       container send-community {
@@ -1572,7 +1678,9 @@ module srl_nokia-bgp {
               (not(../afi-safi[afi-safi-name='l3vpn-ipv6-unicast']/admin-state) and (../../group[group-name = current()/../peer-group]/afi-safi[afi-safi-name='l3vpn-ipv6-unicast']/admin-state = 'enable' or (not(../../group[group-name = current()/../peer-group]/afi-safi[afi-safi-name='l3vpn-ipv6-unicast']/admin-state) and ../../afi-safi[afi-safi-name='l3vpn-ipv6-unicast']/admin-state = 'enable'))) or
               (not(../afi-safi[afi-safi-name='ipv4-labeled-unicast']/admin-state) and (../../group[group-name = current()/../peer-group]/afi-safi[afi-safi-name='ipv4-labeled-unicast']/admin-state = 'enable' or (not(../../group[group-name = current()/../peer-group]/afi-safi[afi-safi-name='ipv4-labeled-unicast']/admin-state) and ../../afi-safi[afi-safi-name='ipv4-labeled-unicast']/admin-state = 'enable'))) or
               (not(../afi-safi[afi-safi-name='ipv6-labeled-unicast']/admin-state) and (../../group[group-name = current()/../peer-group]/afi-safi[afi-safi-name='ipv6-labeled-unicast']/admin-state = 'enable' or (not(../../group[group-name = current()/../peer-group]/afi-safi[afi-safi-name='ipv6-labeled-unicast']/admin-state) and ../../afi-safi[afi-safi-name='ipv6-labeled-unicast']/admin-state = 'enable'))) or
-              (not(../afi-safi[afi-safi-name='route-target']/admin-state) and (../../group[group-name = current()/../peer-group]/afi-safi[afi-safi-name='route-target']/admin-state = 'enable' or (not(../../group[group-name = current()/../peer-group]/afi-safi[afi-safi-name='route-target']/admin-state) and ../../afi-safi[afi-safi-name='route-target']/admin-state = 'enable')))" {
+              (not(../afi-safi[afi-safi-name='route-target']/admin-state) and (../../group[group-name = current()/../peer-group]/afi-safi[afi-safi-name='route-target']/admin-state = 'enable' or (not(../../group[group-name = current()/../peer-group]/afi-safi[afi-safi-name='route-target']/admin-state) and ../../afi-safi[afi-safi-name='route-target']/admin-state = 'enable'))) or
+              (not(../afi-safi[afi-safi-name='sr-policy-ipv4']/admin-state) and (../../group[group-name = current()/../peer-group]/afi-safi[afi-safi-name='sr-policy-ipv4']/admin-state = 'enable' or (not(../../group[group-name = current()/../peer-group]/afi-safi[afi-safi-name='sr-policy-ipv4']/admin-state) and ../../afi-safi[afi-safi-name='sr-policy-ipv4']/admin-state = 'enable'))) or
+              (not(../afi-safi[afi-safi-name='sr-policy-ipv6']/admin-state) and (../../group[group-name = current()/../peer-group]/afi-safi[afi-safi-name='sr-policy-ipv6']/admin-state = 'enable' or (not(../../group[group-name = current()/../peer-group]/afi-safi[afi-safi-name='sr-policy-ipv6']/admin-state) and ../../afi-safi[afi-safi-name='sr-policy-ipv6']/admin-state = 'enable')))" {
           error-message "One of the address families must be enabled.";
         }
       }
@@ -1640,6 +1748,15 @@ module srl_nokia-bgp {
           "A reference to the peer-group template to use for this BGP session
 
            This is not immutable.";
+      }
+      leaf last-prefix-limit-exceeded {
+        config false;
+        if-feature "srl_nokia-feat:bgp-prefix-limit-last-exceeded";
+        type srl_nokia-comm:date-and-time-delta;
+        description
+          "Time when the neighbor last violated a configured prefix-limit for any AFI/SAFI
+
+           This value is set/updated when any AFI/SAFI prefix-limit-exceeded leaf transitions from false/unset to true.";
       }
       container as-path-options {
         description
@@ -1731,6 +1848,7 @@ module srl_nokia-bgp {
         description
           "Options related to methods of detecting BGP session failure";
         leaf enable-bfd {
+          if-feature "srl_nokia-feat:bfd";
           type boolean;
           description
             "The true setting enables Bi-directional Forwarding Detection on BGP sessions belonging to the peer group";
@@ -1846,23 +1964,29 @@ module srl_nokia-bgp {
           }
           description
             "The name of a BGP address family, which translates to a specific AFI value and a specific SAFI value";
-          must "not(. = 'evpn') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'evpn') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "EVPN is not supported in network instances other than default";
           }
-          must "not(. = 'l3vpn-ipv4-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'l3vpn-ipv4-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "L3VPN is not supported in network instances other than default";
           }
-          must "not(. = 'l3vpn-ipv6-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'l3vpn-ipv6-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "L3VPN is not supported in network instances other than default";
           }
-          must "not(. = 'ipv4-labeled-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'ipv4-labeled-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "Label-ipv4 is not supported in network instances other than default";
           }
-          must "not(. = 'ipv6-labeled-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'ipv6-labeled-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "Label-ipv6 is not supported in network instances other than default";
           }
-          must "not(. = 'route-target') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'route-target') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "route-target is not supported in network instances other than default";
+          }
+          must "not(. = 'sr-policy-ipv4') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
+            error-message "sr-policy-ipv4 is not supported in network instances other than default";
+          }
+          must "not(. = 'sr-policy-ipv6') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
+            error-message "sr-policy-ipv6 is not supported in network instances other than default";
           }
         }
         leaf admin-state {
@@ -1892,24 +2016,68 @@ module srl_nokia-bgp {
             type boolean;
             description
               "Enable capability negotiation to receive multiple path advertisements from a single peer for a single NLRI belonging to the AFI/SAFI";
-            must "../../afi-safi-name = 'ipv4-unicast' or ../../afi-safi-name = 'ipv6-unicast'" {
-              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-for-all-afi-safi";
-              error-message "add-paths is not supported for address families other than IPv4 unicast and IPv6 unicast";
+            must "../../afi-safi-name != 'ipv4-labeled-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-labeled-unicast";
+              error-message "add-paths is not supported for address familiy ipv4-labeled-unicast";
+            }
+            must "../../afi-safi-name != 'ipv6-labeled-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-labeled-unicast";
+              error-message "add-paths is not supported for address familiy ipv6-labeled-unicast";
+            }
+            must "../../afi-safi-name != 'l3vpn-ipv4-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-l3vpn";
+              error-message "add-paths is not supported for address familiy l3vpn-ipv4-unicast";
+            }
+            must "../../afi-safi-name != 'l3vpn-ipv6-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-l3vpn";
+              error-message "add-paths is not supported for address familiy l3vpn-ipv6-unicast";
+            }
+            must "../../afi-safi-name != 'evpn'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-evpn";
+              error-message "add-paths is not supported for address familiy evpn";
             }
             must "../../afi-safi-name != 'route-target'" {
               error-message "add-paths is not supported for address family route-target";
+            }
+            must "../../afi-safi-name != 'sr-policy-ipv4'" {
+              error-message "add-paths is not supported for address family sr-policy-ipv4";
+            }
+            must "../../afi-safi-name != 'sr-policy-ipv6'" {
+              error-message "add-paths is not supported for address family sr-policy-ipv6";
             }
           }
           leaf send {
             type boolean;
             description
               "Enable capability negotiation to send multiple path advertisements to a single peer for a single NLRI belonging to the AFI/SAFI";
-            must "../../afi-safi-name = 'ipv4-unicast' or ../../afi-safi-name = 'ipv6-unicast'" {
-              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-for-all-afi-safi";
-              error-message "add-paths is not supported for address families other than IPv4 unicast and IPv6 unicast";
+            must "../../afi-safi-name != 'ipv4-labeled-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-labeled-unicast";
+              error-message "add-paths is not supported for address familiy ipv4-labeled-unicast";
+            }
+            must "../../afi-safi-name != 'ipv6-labeled-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-labeled-unicast";
+              error-message "add-paths is not supported for address familiy ipv6-labeled-unicast";
+            }
+            must "../../afi-safi-name != 'l3vpn-ipv4-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-l3vpn";
+              error-message "add-paths is not supported for address familiy l3vpn-ipv4-unicast";
+            }
+            must "../../afi-safi-name != 'l3vpn-ipv6-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-l3vpn";
+              error-message "add-paths is not supported for address familiy l3vpn-ipv6-unicast";
+            }
+            must "../../afi-safi-name != 'evpn'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-evpn";
+              error-message "add-paths is not supported for address familiy evpn";
             }
             must "../../afi-safi-name != 'route-target'" {
               error-message "add-paths is not supported for address family route-target";
+            }
+            must "../../afi-safi-name != 'sr-policy-ipv4'" {
+              error-message "add-paths is not supported for address family sr-policy-ipv4";
+            }
+            must "../../afi-safi-name != 'sr-policy-ipv6'" {
+              error-message "add-paths is not supported for address family sr-policy-ipv6";
             }
           }
           choice selection-algorithm {
@@ -2252,7 +2420,7 @@ module srl_nokia-bgp {
             "Options related to the EVPN address family";
           leaf advertise-ipv6-next-hops {
             type boolean;
-            must "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+            must "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
               error-message "EVPN is not supported in network instances other than default";
             }
             description
@@ -2267,7 +2435,7 @@ module srl_nokia-bgp {
               type uint32 {
                 range "1..4294967295";
               }
-              must "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+              must "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
                 error-message "EVPN is not supported in network instances other than default";
               }
               must "../../../afi-safi-name = 'evpn'" {
@@ -2278,7 +2446,7 @@ module srl_nokia-bgp {
             }
             leaf warning-threshold-pct {
               type percentage;
-              must "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+              must "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
                 error-message "EVPN is not supported in network instances other than default";
               }
               description
@@ -2287,6 +2455,23 @@ module srl_nokia-bgp {
                 error-message "Only allowed on afi-safi evpn";
               }
             }
+          }
+          leaf default-received-encapsulation {
+            if-feature "srl_nokia-feat:nhsrr-evpn";
+            type enumeration {
+              enum vxlan {
+                value 1;
+              }
+              enum mpls {
+                value 2;
+              }
+            }
+            description
+              "Indicates the encapsulation considered when the routes are received without BGP encapsulation extended community
+
+               Most EVPN routes are usually received with a BGP encapsulation extended community that indicates the encapsulation
+               and therefore how to interpret the value in the received Label fields of the routes. If no encapsulation is
+               received, BGP will validate the route as MPLS or VXLAN or SRv6 depending on how this command is configured.";
           }
         }
         container route-target {
@@ -2305,7 +2490,7 @@ module srl_nokia-bgp {
               type uint32 {
                 range "1..4294967295";
               }
-              must "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+              must "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
                 error-message "RTC is not supported in network instances other than default";
               }
               description
@@ -2313,7 +2498,7 @@ module srl_nokia-bgp {
             }
             leaf warning-threshold-pct {
               type percentage;
-              must "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+              must "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
                 error-message "RTC is not supported in network instances other than default";
               }
               description
@@ -2383,10 +2568,7 @@ module srl_nokia-bgp {
         leaf cluster-id {
           description
             "The cluster-id to insert into the CLUSTER_LIST attribute when reflecting routes received by or sent to this client. The default is inherited from group or instance level configuration.";
-          type union {
-            type uint32;
-            type srl_nokia-comm:dotted-quad;
-          }
+          type cluster-id-type;
         }
       }
       container send-community {
@@ -2654,7 +2836,7 @@ module srl_nokia-bgp {
           enum disable;
         }
         default "disable";
-        must ". = 'disable' or current()/../../../../../../srl_nokia-netinst:type = 'default'" {
+        must ". = 'disable' or current()/../../../../../../srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
           error-message "entropy-label is not supported in network instance other than default";
         }
       }
@@ -2673,17 +2855,32 @@ module srl_nokia-bgp {
 
            When set to false, BGP is only allowed to use non-best paths for ECMP if they meet the multipath criteria and they have the same neighbor AS as the best path";
       }
-      leaf max-paths-level-1 {
+      leaf maximum-paths {
+        if-feature "srl_nokia-feat:bgp-multipath-maximum-paths";
         type ip-ecmp;
         default "1";
         description
           "The maximum number of BGP ECMP next-hops for BGP routes with an NLRI belonging to the address family of this configuration context";
-      }
-      leaf max-paths-level-2 {
-        type ip-ecmp;
-        default "1";
-        description
-          "The maximum number of resolving ECMP next-hops per BGP next-hop associated with BGP routes having an NLRI belonging to the address family of this configuration context";
+        must '. <= 64' {
+          error-message "Valid range for maximum-paths:[1..64] ";
+          srl_nokia-ext:if-feature "not (srl_nokia-feat:bgp-multipath-maximum-paths-limit-128 or srl_nokia-feat:bgp-multipath-maximum-paths-limit-256)";
+        }
+        must "../../afi-safi-name = 'ipv4-unicast' or ../../afi-safi-name = 'ipv6-unicast' or . <= 64" {
+          error-message "Valid range for maximum-paths:[1..64] ";
+          srl_nokia-ext:if-feature "srl_nokia-feat:bgp-multipath-maximum-paths-limit-128 or srl_nokia-feat:bgp-multipath-maximum-paths-limit-256";
+        }
+        must "not (../../afi-safi-name = 'ipv4-unicast' or ../../afi-safi-name = 'ipv6-unicast') or . <= 128" {
+          error-message "Valid range for maximum-paths:[1..128] ";
+          srl_nokia-ext:if-feature "srl_nokia-feat:bgp-multipath-maximum-paths-limit-128";
+        }
+        must "not (../../afi-safi-name = 'ipv4-unicast' or ../../afi-safi-name = 'ipv6-unicast') or . <= 256" {
+          error-message "Valid range for maximum-paths:[1..256] ";
+          srl_nokia-ext:if-feature "srl_nokia-feat:bgp-multipath-maximum-paths-limit-256";
+        }
+        must '(. <= 8)' {
+          srl_nokia-ext:if-feature "srl_nokia-features:platform-7215-a1";
+          error-message "Value cannot be greater than 8 on the 7215 IXS-A1 platform.";
+        }
       }
     }
   }
@@ -2706,6 +2903,8 @@ module srl_nokia-bgp {
 
   grouping backup-paths-family-config {
     container backup-paths {
+      description
+        "Configure backup paths support for the AFI/SAFI";
       leaf install {
         description
           "Install a backup path for every NLRI in the address family, when a suitable one exists";
@@ -2735,6 +2934,24 @@ module srl_nokia-bgp {
     }
   }
 
+  grouping allowed-tunnel-types-unlabeled {
+    leaf-list allowed-tunnel-types {
+      description
+        "List of allowed tunnel types";
+      type identityref {
+        base srl_nokia-comm:bgp-next-hop-resolution-tunnel-type;
+      }
+      must "not(. = 'te-policy-sr-mpls-colored')" {
+        srl_nokia-ext:if-feature "not srl_nokia-feat:future-0-0";
+        error-message "unsupported resolving tunnel";
+      }
+      must "not(. = 'bgp')" {
+        srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-labeled-unicast";
+        error-message "unsupported resolving tunnel";
+      }
+    }
+  }
+
   grouping next-hop-resolution-unlabeled {
     container next-hop-resolution {
       if-feature "srl_nokia-feat:mpls";
@@ -2756,18 +2973,9 @@ module srl_nokia-bgp {
             }
             default "disabled";
           }
-          leaf-list allowed-tunnel-types {
-            description
-              "List of allowed tunnel types";
-            type identityref {
-              base srl_nokia-comm:bgp-next-hop-resolution-tunnel-type;
-            }
-            must "not(. = 'vxlan' or . = 'ip-in-ip')" {
-              error-message "unsupported resolving tunnel";
-            }
-          }
+          uses allowed-tunnel-types-unlabeled;
           uses color-aware-next-hop-resolution {
-            if-feature "srl_nokia-feat:bgp-next-hop-resolution-tag or srl_nokia-feat:segment-routing-colored-te-policies";
+            if-feature "srl_nokia-feat:bgp-next-hop-resolution-tag or srl_nokia-feat:isis-flex-algo or srl_nokia-feat:segment-routing-colored-te-policies";
           }
         }
       }
@@ -2788,20 +2996,28 @@ module srl_nokia-bgp {
             }
             default "disabled";
           }
-          leaf-list allowed-tunnel-types {
-            description
-              "List of allowed tunnel types";
-            type identityref {
-              base srl_nokia-comm:bgp-next-hop-resolution-tunnel-type;
-            }
-            must "not(. = 'vxlan' or . = 'ip-in-ip')" {
-              error-message "unsupported resolving tunnel";
-            }
-          }
+          uses allowed-tunnel-types-unlabeled;
           uses color-aware-next-hop-resolution {
-            if-feature "srl_nokia-feat:bgp-next-hop-resolution-tag or srl_nokia-feat:segment-routing-colored-te-policies";
+            if-feature "srl_nokia-feat:bgp-next-hop-resolution-tag or srl_nokia-feat:isis-flex-algo or srl_nokia-feat:segment-routing-colored-te-policies";
           }
         }
+      }
+    }
+  }
+
+  grouping allowed-tunnel-types-labeled {
+    leaf-list allowed-tunnel-types {
+      description
+        "List of allowed tunnel types";
+      type identityref {
+        base srl_nokia-comm:bgp-next-hop-resolution-tunnel-type;
+      }
+      must "not(. = 'bgp')" {
+        error-message "unsupported resolving tunnel";
+      }
+      must "not(. = 'te-policy-sr-mpls-uncolored')" {
+        srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-labeled-unicast-over-sr-te";
+        error-message "unsupported resolving tunnel";
       }
     }
   }
@@ -2832,18 +3048,9 @@ module srl_nokia-bgp {
         container tunnel-resolution {
           description
             "Options related to resolution using tunnels in the tunnel table";
-          leaf-list allowed-tunnel-types {
-            description
-              "List of allowed tunnel types";
-            type identityref {
-              base srl_nokia-comm:bgp-next-hop-resolution-tunnel-type;
-            }
-            must "not(. = 'vxlan' or . = 'ip-in-ip' or . = 'bgp')" {
-              error-message "unsupported resolving tunnel";
-            }
-          }
+          uses allowed-tunnel-types-labeled;
           uses color-aware-next-hop-resolution {
-            if-feature "srl_nokia-feat:bgp-next-hop-resolution-tag or srl_nokia-feat:segment-routing-colored-te-policies";
+            if-feature "(srl_nokia-feat:bgp-next-hop-resolution-tag and srl_nokia-feat:bgp-labeled-unicast-over-sr-te) or srl_nokia-feat:isis-flex-algo or srl_nokia-feat:segment-routing-colored-te-policies";
           }
         }
       }
@@ -2869,18 +3076,82 @@ module srl_nokia-bgp {
         container tunnel-resolution {
           description
             "Options related to resolution using tunnels in the tunnel table";
-          leaf-list allowed-tunnel-types {
-            description
-              "List of allowed tunnel types";
-            type identityref {
-              base srl_nokia-comm:bgp-next-hop-resolution-tunnel-type;
-            }
-            must "not(. = 'vxlan' or . = 'ip-in-ip' or . = 'bgp')" {
-              error-message "unsupported resolving tunnel";
-            }
-          }
+          uses allowed-tunnel-types-labeled;
           uses color-aware-next-hop-resolution {
-            if-feature "srl_nokia-feat:bgp-next-hop-resolution-tag or srl_nokia-feat:segment-routing-colored-te-policies";
+            if-feature "(srl_nokia-feat:bgp-next-hop-resolution-tag and srl_nokia-feat:bgp-labeled-unicast-over-sr-te) or srl_nokia-feat:isis-flex-algo or srl_nokia-feat:segment-routing-colored-te-policies";
+          }
+        }
+      }
+    }
+  }
+
+  grouping allowed-tunnel-types-evpn-ipvpn-mpls {
+    leaf-list allowed-tunnel-types {
+      description
+        "List of allowed tunnel types";
+      type identityref {
+        base srl_nokia-comm:bgp-next-hop-resolution-tunnel-type;
+      }
+    }
+  }
+
+  grouping next-hop-resolution-evpn-ipvpn-mpls {
+    container next-hop-resolution {
+      description
+        "Options for controlling next-hop resolution procedures";
+      container ipv4-next-hops {
+        description
+          "Options related to the resolution of BGP next-hops that are IPv4 addresses";
+        container route-resolution {
+          description
+            "Options related to resolution using IP routes in the FIB";
+          leaf admin-state {
+            description
+              "Enable or disable route resolution if no resolving tunnel is found";
+            type srl_nokia-comm:admin-state;
+            default "enable";
+          }
+          leaf ignore-default-routes {
+            description
+              "Ignore default routes, regardless of route type";
+            type boolean;
+            default "true";
+          }
+        }
+        container tunnel-resolution {
+          description
+            "Options related to resolution using tunnels in the tunnel table";
+          uses allowed-tunnel-types-evpn-ipvpn-mpls;
+          uses color-aware-next-hop-resolution {
+            if-feature "srl_nokia-feat:bgp-next-hop-resolution-tag or srl_nokia-feat:isis-flex-algo or srl_nokia-feat:segment-routing-colored-te-policies";
+          }
+        }
+      }
+      container ipv6-next-hops {
+        description
+          "Options related to the resolution of BGP next-hops that are IPv6 addresses";
+        container route-resolution {
+          description
+            "Options related to resolution using IP routes in the FIB";
+          leaf admin-state {
+            description
+              "Enable or disable route resolution if no resolving tunnel is found";
+            type srl_nokia-comm:admin-state;
+            default "enable";
+          }
+          leaf ignore-default-routes {
+            description
+              "Ignore default routes, regardless of route type";
+            type boolean;
+            default "true";
+          }
+        }
+        container tunnel-resolution {
+          description
+            "Options related to resolution using tunnels in the tunnel table";
+          uses allowed-tunnel-types-evpn-ipvpn-mpls;
+          uses color-aware-next-hop-resolution {
+            if-feature "srl_nokia-feat:bgp-next-hop-resolution-tag or srl_nokia-feat:isis-flex-algo or srl_nokia-feat:segment-routing-colored-te-policies";
           }
         }
       }
@@ -2891,7 +3162,7 @@ module srl_nokia-bgp {
     container selective-labeled-unicast-install {
       if-feature "srl_nokia-feat:bgp-labeled-unicast-selective-install";
       presence "Do not install labeled-unicast routes as tunnels in the tunnel-table unless they match the next-hop of a locally installed VPN route";
-      must "../../../../../srl_nokia-netinst:type = 'default'" {
+      must "../../../../../srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
         error-message "selective-labeled-unicast-install is not supported in network instance other than default";
       }
       leaf program-label-swap {
@@ -2951,8 +3222,8 @@ module srl_nokia-bgp {
   grouping bgp-label-instance {
     container bgp-label {
       presence "Enable BGP labeled route support";
-      if-feature "srl_nokia-feat:bgp-labeled-unicast or srl_nokia-feat:inter-as-nhsrr-ipvpn";
-      must '(/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = "default")' {
+      if-feature "srl_nokia-feat:bgp-labeled-unicast or srl_nokia-feat:inter-as-nhsrr-ipvpn or srl_nokia-feat:nhsrr-evpn";
+      must '(/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = "srl_nokia-netinst:default")' {
         error-message "Labeled BGP configuration is only possible in network-instance of type default";
       }
       container labeled-unicast {
@@ -2978,6 +3249,31 @@ module srl_nokia-bgp {
         uses entropy-label;
         uses selective-label-route-optimizations;
       }
+      container bgp-vpn {
+        if-feature "srl_nokia-feat:label-management and (srl_nokia-feat:inter-as-nhsrr-ipvpn or srl_nokia-feat:nhsrr-evpn)";
+        leaf dynamic-label-block {
+          type leafref {
+            path "/srl_nokia-system:system/srl_nokia-mplslbl:mpls/srl_nokia-mplslbl:label-ranges/srl_nokia-mplslbl:dynamic/srl_nokia-mplslbl:name";
+          }
+          description
+            "Reference to a dynamic label block used for non-local BGP VPN routes advertised with next-hop-self";
+        }
+        leaf dynamic-label-block-status {
+          config false;
+          type enumeration {
+            enum available;
+            enum unavailable;
+          }
+          description
+            "Status of the label block.
+
+             The label block may show as unavailable if there is pending cleanup.";
+        }
+      }
+      container bgp-ipvpn {
+        if-feature "srl_nokia-feat:inter-as-nhsrr-ipvpn";
+        uses next-hop-resolution-evpn-ipvpn-mpls;
+      }
     }
   }
 
@@ -2985,7 +3281,7 @@ module srl_nokia-bgp {
     container rib-management {
       if-feature "srl_nokia-feat:bgp-labeled-unicast";
       list table {
-        must "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+        must "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
           error-message "RIB management not supported in network-instances other than default";
         }
         key "address-family";
@@ -3054,7 +3350,9 @@ module srl_nokia-bgp {
                (../afi-safi[afi-safi-name='ipv6-labeled-unicast']/admin-state = 'enable') or
                (../afi-safi[afi-safi-name='l3vpn-ipv4-unicast']/admin-state = 'enable') or
                (../afi-safi[afi-safi-name='l3vpn-ipv6-unicast']/admin-state = 'enable') or
-               (../afi-safi[afi-safi-name='route-target']/admin-state = 'enable')" {
+               (../afi-safi[afi-safi-name='route-target']/admin-state = 'enable') or
+               (../afi-safi[afi-safi-name='sr-policy-ipv4']/admin-state = 'enable') or
+               (../afi-safi[afi-safi-name='sr-policy-ipv6']/admin-state = 'enable')" {
           error-message "One of the address families must be enabled.";
         }
         description
@@ -3340,6 +3638,7 @@ module srl_nokia-bgp {
         description
           "Options related to methods of detecting BGP session failure";
         leaf enable-bfd {
+          if-feature "srl_nokia-feat:bfd";
           type boolean;
           default "false";
           description
@@ -3396,7 +3695,7 @@ module srl_nokia-bgp {
            Weighted ECMP weights are normalized based on this number of hash buckets.";
         must '. <= 64' {
           error-message "Valid range for max-ecmp-hash-buckets-per-next-hop-group:[1..64] ";
-          srl_nokia-ext:if-feature "srl_nokia-feat:future-0-0";
+          srl_nokia-ext:if-feature "srl_nokia-feat:fpcx";
         }
         must '. <= 128' {
           error-message "Valid range for max-ecmp-hash-buckets-per-next-hop-group:[1..128] ";
@@ -3405,6 +3704,10 @@ module srl_nokia-bgp {
         must '. <= 256' {
           error-message "Valid range for max-ecmp-hash-buckets-per-next-hop-group:[1..256] ";
           srl_nokia-ext:if-feature "srl_nokia-feat:jericho2 or srl_nokia-feat:jericho2cp";
+        }
+        must '(. <= 8)' {
+          srl_nokia-ext:if-feature "srl_nokia-features:platform-7215-a1";
+          error-message "Value cannot be greater than 8 on the 7215 IXS-A1 platform.";
         }
       }
       list afi-safi {
@@ -3417,23 +3720,29 @@ module srl_nokia-bgp {
           }
           description
             "The name of a BGP address family, which translates to a specific AFI value and a specific SAFI value";
-          must "not(. = 'evpn') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'evpn') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "EVPN is not supported in network instances other than default";
           }
-          must "not(. = 'route-target') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'route-target') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "route-target is not supported in network instances other than default";
           }
-          must "not(. = 'l3vpn-ipv4-unicast')  or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'l3vpn-ipv4-unicast')  or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "L3VPN is not supported in network instances other than default";
           }
-          must "not(. = 'l3vpn-ipv6-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'l3vpn-ipv6-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "L3VPN is not supported in network instances other than default";
           }
-          must "not(. = 'ipv4-labeled-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'ipv4-labeled-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "Label-IPv4 is not supported in network instances other than default";
           }
-          must "not(. = 'ipv6-labeled-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default'" {
+          must "not(. = 'ipv6-labeled-unicast') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
             error-message "Label-IPv6 is not supported in network instances other than default";
+          }
+          must "not(. = 'sr-policy-ipv4') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
+            error-message "sr-policy-ipv4 is not supported in network instances other than default";
+          }
+          must "not(. = 'sr-policy-ipv6') or /srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
+            error-message "sr-policy-ipv6 is not supported in network instances other than default";
           }
         }
         leaf admin-state {
@@ -3451,24 +3760,68 @@ module srl_nokia-bgp {
             type boolean;
             description
               "Enable capability negotiation to receive multiple path advertisements from a single peer for a single NLRI belonging to the AFI/SAFI";
-            must "../../afi-safi-name = 'ipv4-unicast' or ../../afi-safi-name = 'ipv6-unicast'" {
-              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-for-all-afi-safi";
-              error-message "add-paths is not supported for address families other than IPv4 unicast and IPv6 unicast";
+            must "../../afi-safi-name != 'ipv4-labeled-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-labeled-unicast";
+              error-message "add-paths is not supported for address familiy ipv4-labeled-unicast";
+            }
+            must "../../afi-safi-name != 'ipv6-labeled-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-labeled-unicast";
+              error-message "add-paths is not supported for address familiy ipv6-labeled-unicast";
+            }
+            must "../../afi-safi-name != 'l3vpn-ipv4-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-l3vpn";
+              error-message "add-paths is not supported for address familiy l3vpn-ipv4-unicast";
+            }
+            must "../../afi-safi-name != 'l3vpn-ipv6-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-l3vpn";
+              error-message "add-paths is not supported for address familiy l3vpn-ipv6-unicast";
+            }
+            must "../../afi-safi-name != 'evpn'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-evpn";
+              error-message "add-paths is not supported for address familiy evpn";
             }
             must "../../afi-safi-name != 'route-target'" {
               error-message "add-paths is not supported for address family route-target";
+            }
+            must "../../afi-safi-name != 'sr-policy-ipv4'" {
+              error-message "add-paths is not supported for address family sr-policy-ipv4";
+            }
+            must "../../afi-safi-name != 'sr-policy-ipv6'" {
+              error-message "add-paths is not supported for address family sr-policy-ipv6";
             }
           }
           leaf send {
             type boolean;
             description
               "Enable capability negotiation to send multiple path advertisements to a single peer for a single NLRI belonging to the AFI/SAFI";
-            must "../../afi-safi-name = 'ipv4-unicast' or ../../afi-safi-name = 'ipv6-unicast'" {
-              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-for-all-afi-safi";
-              error-message "add-paths is not supported for address families other than IPv4 unicast and IPv6 unicast";
+            must "../../afi-safi-name != 'ipv4-labeled-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-labeled-unicast";
+              error-message "add-paths is not supported for address familiy ipv4-labeled-unicast";
+            }
+            must "../../afi-safi-name != 'ipv6-labeled-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-labeled-unicast";
+              error-message "add-paths is not supported for address familiy ipv6-labeled-unicast";
+            }
+            must "../../afi-safi-name != 'l3vpn-ipv4-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-l3vpn";
+              error-message "add-paths is not supported for address familiy l3vpn-ipv4-unicast";
+            }
+            must "../../afi-safi-name != 'l3vpn-ipv6-unicast'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-l3vpn";
+              error-message "add-paths is not supported for address familiy l3vpn-ipv6-unicast";
+            }
+            must "../../afi-safi-name != 'evpn'" {
+              srl_nokia-ext:if-feature "not srl_nokia-feat:bgp-add-paths-evpn";
+              error-message "add-paths is not supported for address familiy evpn";
             }
             must "../../afi-safi-name != 'route-target'" {
               error-message "add-paths is not supported for address family route-target";
+            }
+            must "../../afi-safi-name != 'sr-policy-ipv4'" {
+              error-message "add-paths is not supported for address family sr-policy-ipv4";
+            }
+            must "../../afi-safi-name != 'sr-policy-ipv6'" {
+              error-message "add-paths is not supported for address family sr-policy-ipv6";
             }
           }
           choice selection-algorithm {
@@ -3491,6 +3844,19 @@ module srl_nokia-bgp {
               must '../send = true()' {
                 error-message "send capability must be advertised";
               }
+            }
+          }
+          leaf eligible-prefix-policy {
+            if-feature "srl_nokia-feat:bgp-add-paths-policy-control";
+            description
+              "Specifies a route policy to control the set prefixes that are eligible for the add-paths send behavior
+
+               If no policy is configured: advertise add-paths for every prefix according to the afi-safi configuration
+               If a policy is configured and there is no match: advertise add-paths for the prefix according to the afi-safi configuration
+               If a policy is configured and a route for prefix P is matched with an accept action: advertise add-paths for the prefix P according to the afi-safi configuration
+               If a policy is configured and a route for prefix P is matched with a reject action: no add-paths are advertised for prefix P";
+            type leafref {
+              path "/srl-rpol:routing-policy/srl-rpol:policy/srl-rpol:name";
             }
           }
         }
@@ -3552,7 +3918,7 @@ module srl_nokia-bgp {
                When this is false, VPN-IPv4 routes that are not imported by any network-instance are dropped and not retained in the BGP RIB-IN; policy changes affecting received VPN-IPv4 routes will trigger the sending of ROUTE_REFRESH messages towards all VPN-IPv4 family peers.";
             type boolean;
             default "false";
-            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default')" {
+            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
               error-message "VPN-IPv4 is not supported in network instances other than default";
             }
           }
@@ -3564,7 +3930,7 @@ module srl_nokia-bgp {
                This command triggers the programming of a VPN label swap operation for each received VPN-IPv4 route.";
             type boolean;
             default "false";
-            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default')" {
+            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
               error-message "VPN-IPv4 is not supported in network instances other than default";
             }
           }
@@ -3576,7 +3942,7 @@ module srl_nokia-bgp {
                This command supersedes the effect of keep-all-routes. This command triggers the programming of a VPN label swap operation for each received VPN-IPv4 route.";
             type boolean;
             default "false";
-            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default')" {
+            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
               error-message "VPN-IPv4 is not supported in network instances other than default";
             }
           }
@@ -3628,7 +3994,7 @@ module srl_nokia-bgp {
                When this is false, VPN-IPv6 routes that are not imported by any network-instance are dropped and not retained in the BGP RIB-IN; policy changes affecting received VPN-IPv6 routes will trigger the sending of ROUTE_REFRESH messages towards all VPN-IPv6 family peers.";
             type boolean;
             default "false";
-            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default')" {
+            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
               error-message "VPN-IPv6 is not supported in network instances other than default";
             }
           }
@@ -3640,7 +4006,7 @@ module srl_nokia-bgp {
                This command triggers the programming of a VPN label swap operation for each received VPN-IPv6 route.";
             type boolean;
             default "false";
-            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default')" {
+            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
               error-message "VPN-IPv6 is not supported in network instances other than default";
             }
           }
@@ -3652,7 +4018,7 @@ module srl_nokia-bgp {
                This command supersedes the effect of keep-all-routes. This command triggers the programming of a VPN label swap operation for each received VPN-IPv6 route.";
             type boolean;
             default "false";
-            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default')" {
+            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
               error-message "VPN-IPv6 is not supported in network instances other than default";
             }
           }
@@ -3671,7 +4037,7 @@ module srl_nokia-bgp {
           leaf advertise-ipv6-next-hops {
             type boolean;
             default "false";
-            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default')" {
+            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
               error-message "EVPN is not supported in network instances other than default";
             }
             description
@@ -3686,9 +4052,12 @@ module srl_nokia-bgp {
                When this is false, EVPN routes that are not imported by any network-instance are dropped and not retained in the BGP RIB-IN; policy changes affecting received EVPN routes will trigger the sending of ROUTE_REFRESH messages towards all EVPN family peers.";
             type boolean;
             default "false";
-            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default')" {
+            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
               error-message "EVPN is not supported in network instances other than default";
             }
+          }
+          uses next-hop-resolution-evpn-ipvpn-mpls {
+            if-feature "srl_nokia-feat:nhsrr-evpn";
           }
           leaf next-hop-self-route-reflector {
             if-feature "srl_nokia-feat:nhsrr-evpn";
@@ -3698,7 +4067,7 @@ module srl_nokia-bgp {
                This command triggers the programming of an EVI label swap operation for each received EVPN MPLS route.";
             type boolean;
             default "false";
-            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default')" {
+            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
               error-message "EVPN is not supported in network instances other than default";
             }
           }
@@ -3709,7 +4078,7 @@ module srl_nokia-bgp {
                This command supersedes the effect of keep-all-routes.";
             type boolean;
             default "false";
-            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default')" {
+            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
               error-message "EVPN is not supported in network instances other than default";
             }
           }
@@ -3718,9 +4087,27 @@ module srl_nokia-bgp {
               "When this is set to true, EVPN UPDATEs advertising reachability and withdrawals are advertised immediately, bypassing the session level min-route-advertisement-interval. When this is false, reachability updates and withdrawals are subject to the MRAI interval.";
             type boolean;
             default "false";
-            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'default')" {
+            must ". = false() or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
               error-message "EVPN is not supported in network instances other than default";
             }
+          }
+          leaf default-received-encapsulation {
+            if-feature "srl_nokia-feat:nhsrr-evpn";
+            type enumeration {
+              enum vxlan {
+                value 1;
+              }
+              enum mpls {
+                value 2;
+              }
+            }
+            default "vxlan";
+            description
+              "Indicates the encapsulation considered when the routes are received without BGP encapsulation extended community
+
+               Most EVPN routes are usually received with a BGP encapsulation extended community that indicates the encapsulation
+               and therefore how to interpret the value in the received Label fields of the routes. If no encapsulation is
+               received, BGP will validate the route as MPLS or VXLAN or SRv6 depending on how this command is configured.";
           }
         }
       }
@@ -3820,10 +4207,7 @@ module srl_nokia-bgp {
         leaf cluster-id {
           description
             "The cluster-id to insert into the CLUSTER_LIST attribute when reflecting routes received by or sent to clients in this scope of this container. The default is the router-id.";
-          type union {
-            type uint32;
-            type srl_nokia-comm:dotted-quad;
-          }
+          type cluster-id-type;
         }
       }
       uses segment-routing;

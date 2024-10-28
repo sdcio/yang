@@ -19,6 +19,10 @@ module srl_nokia-oam-pm {
     "This YANG module contains the common OAM Performance Monitoring architectural
      components that will be used by the technology specific modules.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -36,7 +40,9 @@ module srl_nokia-oam-pm {
     description
       "Common OAM-PM session information";
     leaf session-name {
-      type srl_nokia-comm:name;
+      type string {
+        length "1..32";
+      }
       description
         "The name of the OAM-PM session";
     }
@@ -109,7 +115,7 @@ module srl_nokia-oam-pm {
         must "(../mi-duration  = '1-minute' and . < 97) or
               (../mi-duration  = '5-minutes' and . < 97) or
               (../mi-duration  = '15-minutes' and . < 97) or
-              (../mi-duration  = '1-hour' and . < 24) or
+              (../mi-duration  = '1-hour' and . < 25) or
               (../mi-duration  = '1-day' and . < 2)" {
           error-message "The current intervals stored value exceed the maximum value for the ../mi-duration";
         }
@@ -188,7 +194,6 @@ module srl_nokia-oam-pm {
     description
       "Bin group configuration parameters ";
     list bin-group {
-      max-elements 255;
       key "bin-group-name";
       description
         "Enter the bin-group list instance";
@@ -197,25 +202,34 @@ module srl_nokia-oam-pm {
         description
           "The name of the bin group
 
-           The 'default' bin-group is created by the system.  The 'default' bin-group is not configurable and has the following system
-           values bin type counts and associated lower-bound values.  These values are microseconds.
+           Each performance monitoring session requires a bin-group references.  The bin-group includes information on how the delay information is binned
+           and any threshold or exclusion functions.  Each performance monitoring session references the bin-group 'default'.  The 'default' bin-group is
+           created by the system.  Its purpose is to reduce the configuration when the binning of information is not a key requirement for the performance
+           monitoring session.  It contains basic values.  The bin-type parameters cannot be modified. The following bin-type and lower-bound values are
+           assigned to the bin-group 'default'.  These values are microseconds.
 
            bin-type fd
               bin 0 { lower-bound 0 }
-              bin 1 { lower-bound 10000 }
+              bin 1 { lower-bound 5000 }
+              bin 2 { lower-bound 10000 }
            bin-type fdr
               bin 0 { lower-bound 0 }
-              bin 1 { lower-bound 10000 }
+              bin 1 { lower-bound 5000 }
            bin-type ifdv
               bin 0 { lower-bound 0 }
-              bin 1 { lower-bound 10000 }
-          ";
+              bin 1 { lower-bound 5000 }
+
+           The bin-group 'default' can be entered in the configuration.  It must include the admin-state 'enable'.  If entered in the configuration it cannot
+           be deleted if any performance monitoring session is referencing it.   The information for the bin-group 'default' is available in state.";
       }
       leaf admin-state {
         type srl_nokia-comm:admin-state;
         default "disable";
         description
           "Administrative state of the bin group";
+        must "not(../bin-group-name = 'default') or (. = 'enable')" {
+          error-message "The bin-group 'default' requires admin-state 'enable'";
+        }
       }
       leaf description {
         type srl_nokia-comm:description;
@@ -234,6 +248,9 @@ module srl_nokia-oam-pm {
           type srl_nokia-pm-types:bin-metric-type;
           description
             "Enter the bin-type list instance";
+          must "not(../../bin-group-name = 'default')" {
+            error-message "The bin-group 'default' bin-type attributes cannot be modified";
+          }
         }
         list bin {
           key "bin-number";
@@ -404,12 +421,6 @@ module srl_nokia-oam-pm {
          Not all request frame transmit failures are detected by this mechanism.  It is possible that
          the value 'none' will be returned when the test is unable to transmit frames during undetectable
          transmission errors.";
-    }
-    leaf last-terminate-restart {
-      config false;
-      type srl_nokia-comm:date-and-time;
-      description
-        "UTC date and time the test session was restarted because of a configuration action, clearing all stored results";
     }
   }
 
@@ -754,7 +765,7 @@ module srl_nokia-oam-pm {
         }
         default "10";
         description
-          "Number of consecutive delta-t that comprise the availability/unavailability sliding window
+          "Number of consecutive delta-t that comprise the availability/unavailability sliding window, must not exceed 100 seconds
 
            Availability and unavailability state changes will occur when the sliding window is completely comprised of a different
            state values than the current state";

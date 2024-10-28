@@ -700,4 +700,11 @@ module openconfig-isis-lsdb-types {
       "draft-ietf-isis-segment-routing-extensions.";
   }
 
+  identity ROUTER_CAPABILITY_NODE_MSD {
+    base "ROUTER_CAPABILITY_SUBTLVS_TYPE";
+    description
+      "sub-TLV 23. Segment Routing Capability.";
+    reference
+      "RFC 8491: Signaling Maximum SID Depth (MSD) Using IS-IS.";
+  }
 }

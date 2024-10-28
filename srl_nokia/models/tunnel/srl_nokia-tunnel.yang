@@ -21,6 +21,10 @@ module srl_nokia-tunnel {
   description
     "Model for tunnels in SRLinux.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -34,7 +38,7 @@ module srl_nokia-tunnel {
     description
       "Top-level configuration and state for the tunnel table.";
     container tunnel {
-      if-feature "srl-feat:vxlan or srl-feat:connection-point";
+      if-feature "srl-feat:vxlan or srl-feat:pseudowire";
       srl_nokia-ext:first-released "20.10.1";
       description
         "This model collects all config and state aspects of the tunnel table

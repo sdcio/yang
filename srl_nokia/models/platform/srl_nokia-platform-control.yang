@@ -24,6 +24,10 @@ module srl_nokia-platform-control {
   description
     "This module defines configuration and operational state data related to control modules.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -202,10 +206,14 @@ module srl_nokia-platform-control {
       uses control-state-top;
       uses srl-platform:component-common-state-top;
       uses srl-platform:component-common-eeprom;
-      uses srl-platform:component-bootloader-common;
-      uses srl-platform:component-bios-common;
+      uses srl-platform:component-bootloader-common {
+        if-feature "not srl-feat:platform-vsrl";
+      }
+      uses srl-platform:component-bios-common {
+        if-feature "not srl-feat:platform-vsrl";
+      }
       uses control-interfaces-top {
-        if-feature "srl-feat:disabled";
+        if-feature "srl-feat:platform-7250-ixr-x3b";
       }
       uses last-switchover-reason {
         if-feature "srl-feat:chassis";

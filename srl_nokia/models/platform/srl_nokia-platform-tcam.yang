@@ -30,6 +30,10 @@ module srl_nokia-platform-tcam {
   description
     "This module defines configuration and operational state related to TCAM resources in the system";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -116,28 +120,28 @@ module srl_nokia-platform-tcam {
   }
 
   identity capture-ipv4 {
-    if-feature "srl_feat:tomahawk3 or srl_feat:tomahawk4";
+    if-feature "srl_feat:ac5x or srl_feat:tomahawk3 or srl_feat:tomahawk4";
     base tcam-resources;
     description
       "Resource pool of TCAM entries used by IPv4 capture-filter ACLs";
   }
 
   identity capture-ipv6 {
-    if-feature "srl_feat:tomahawk3 or srl_feat:tomahawk4";
+    if-feature "srl_feat:ac5x or srl_feat:tomahawk3 or srl_feat:tomahawk4";
     base tcam-resources;
     description
       "Resource pool of TCAM entries used by IPv6 capture-filter ACLs";
   }
 
   identity if-output-cpm-ipv4 {
-    if-feature "srl_feat:trident3 or srl_feat:tomahawk3 or srl_feat:tomahawk4 or srl_feat:future-0-0";
+    if-feature "srl_feat:ac5x or srl_feat:trident3 or srl_feat:tomahawk3 or srl_feat:tomahawk4 or srl_feat:fpcx";
     base tcam-resources;
     description
       "Resource pool of TCAM entries used by IPv4 egress ACLs and cpm-filter ACLs";
   }
 
   identity if-output-cpm-ipv6 {
-    if-feature "srl_feat:trident3 or srl_feat:tomahawk3 or srl_feat:tomahawk4 or srl_feat:future-0-0";
+    if-feature "srl_feat:ac5x or srl_feat:trident3 or srl_feat:tomahawk3 or srl_feat:tomahawk4 or srl_feat:fpcx";
     base tcam-resources;
     description
       "Resource pool of TCAM entries used by IPv6 egress ACLs and cpm-filter ACLs";
@@ -151,7 +155,7 @@ module srl_nokia-platform-tcam {
   }
 
   identity if-input-mac {
-    if-feature "(srl_feat:trident3 and (not srl_feat:platform-7220-d1)) or srl_feat:trident4";
+    if-feature "srl_feat:ac5x or (srl_feat:trident3 and (not srl_feat:platform-7220-d1)) or srl_feat:trident4";
     base tcam-resources;
     description
       "Resource pool of TCAM entries used by MAC ACLs applied as subinterface-input filers";
@@ -215,6 +219,23 @@ module srl_nokia-platform-tcam {
        One TCAM entry is used per multicast snooping protocol enabled in a MAC-VRF. For instance,
        if igmp-snooping and mld-snooping are enabled on a MAC-VRF, two entries are used. If only
        igmp-snooping is enabled, only one entry is used.";
+  }
+
+  identity tunnel-decap-ipv4-ipv6 {
+    if-feature "srl_feat:ip-tunnel-decap-groups";
+    base tcam-resources;
+    description
+      "Resource pool of TCAM entries used for IPv4 and IPv6 tunnel-decapsulation groups";
+  }
+
+  identity if-output-evpn-mh-multicast-non-df {
+    if-feature "srl_feat:evpn-mh-multicast-non-df-tcam-resource";
+    base tcam-resources;
+    description
+      "Resource pool of TCAM entries used by egress filtering of IP multicast traffic to non-Designated Forwarder subinterfaces
+
+       One TCAM entry is used when multicast snooping protocols are enabled on at least one MAC-VRF that
+       has one or more subinterfaces associated with Ethernet Segments.";
   }
 
   grouping tcam-resource-monitoring {

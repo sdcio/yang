@@ -47,6 +47,10 @@ module srl_nokia-ospf {
   description
     "This yang file models configuration and state of the OSPF protocol";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -210,7 +214,7 @@ module srl_nokia-ospf {
       leaf last-established-time {
         description
           "Time then OSPF neighbor was last established";
-        type srl_nokia-comm:timeticks64;
+        type srl_nokia-comm:date-and-time-delta;
       }
       leaf adjacency-state {
         description
@@ -446,7 +450,7 @@ module srl_nokia-ospf {
     leaf adjacencies {
       type empty;
       description
-        "Enable tracing all BGP events.";
+        "Enable tracing all adjacency events.";
     }
   }
 
@@ -524,7 +528,10 @@ module srl_nokia-ospf {
     leaf metric {
       type srl_nokia-ospf-types:ospf-metric;
       description
-        "Explicit route cost metric that is applied to the interface";
+        "Explicit route cost metric that is applied to the interface.
+
+         Setting the value to 0 or removing the metric will cause the metric to be
+         derived from the link bandwidth and the reference-bandwidth";
     }
     leaf mtu {
       type uint32 {
@@ -532,6 +539,7 @@ module srl_nokia-ospf {
       }
       description
         "MTU for the OSPF to use on the interface. For OSPFv3 this must be minimum 1280.
+
          If the MTU defined here exceeds the actual IP-MTU of the interface, then the
          IP-MTU of the interface is used.";
       must "((../../../version = 'srl_nokia-ospf-types:ospf-v2') or (current() >= 1280))" {
@@ -606,6 +614,7 @@ module srl_nokia-ospf {
       }
     }
     container failure-detection {
+      if-feature "srl-feat:bfd";
       description
         "Options related to methods of detecting BGP session failure";
       leaf enable-bfd {
@@ -1271,6 +1280,10 @@ module srl_nokia-ospf {
          for every IP prefix";
       type srl_nokia-ospf-types:ospf-ecmp;
       default "1";
+      must '(. <= 8)' {
+        srl_nokia-ext:if-feature "srl_nokia-features:platform-7215-a1";
+        error-message "ECMP value cannot be greater than 8 on the 7215 IXS-A1 platform.";
+      }
     }
     leaf advertise-router-capability {
       description
@@ -1462,7 +1475,7 @@ module srl_nokia-ospf {
       if-feature "srl-feat:traffic-engineering-ospf";
     }
     uses inst-traffic-engineering-config {
-      if-feature "srl-feat:traffic-engineering";
+      if-feature "srl-feat:traffic-engineering-ospf";
     }
   }
 

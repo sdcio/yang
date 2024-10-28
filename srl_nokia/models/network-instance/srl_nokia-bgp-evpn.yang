@@ -33,6 +33,10 @@ module srl_nokia-bgp-evpn {
   description
     "This yang file models configuration and state of the bgp-evpn protocol";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -134,7 +138,7 @@ module srl_nokia-bgp-evpn {
              Weighted ECMP weights are normalized based on this number of hash buckets.";
           must '. <= 64' {
             error-message "Valid range for max-ecmp-hash-buckets-per-next-hop-group:[1..64] ";
-            srl_nokia-ext:if-feature "srl_nokia-feat:future-0-0";
+            srl_nokia-ext:if-feature "srl_nokia-feat:fpcx";
           }
           must '. <= 128' {
             error-message "Valid range for max-ecmp-hash-buckets-per-next-hop-group:[1..128] ";
@@ -166,14 +170,12 @@ module srl_nokia-bgp-evpn {
               "If set to true then local mac's and local mac-ip pairs will be advertised in this evpn instance";
           }
           leaf advertise-arp-nd-only-with-mac-table-entry {
-            if-feature "srl_nokia-feat:evpn-advertise-arp-nd-only-with-mac-table-entry";
             type boolean;
             default "false";
             description
               "If set to true then local mac-ip records will be advertised in this evpn instance only when we have a local mac in the mac-table";
           }
           leaf advertise-arp-nd-extended-community {
-            if-feature "srl_nokia-feat:evpn-mac-ip-adv-arp-nd-ext-comm";
             description
               "ARP/ND extended community";
             type boolean;
@@ -200,7 +202,6 @@ module srl_nokia-bgp-evpn {
             "The ip-address that will be used as the bgp next-hop for all routes advertised in this evpn instance.";
         }
         leaf vlan-aware-bundle-eth-tag {
-          if-feature "srl_nokia-feat:bt-evpn-vlan-aware-bundle-interop";
           type ethernet-tag-id;
           default "0";
           description
@@ -253,11 +254,11 @@ module srl_nokia-bgp-evpn {
         type identityref {
           base srl_nokia-comm:bgp-next-hop-resolution-tunnel-type;
         }
-        must "not(. = 'vxlan' or . = 'ip-in-ip')" {
-          error-message "unsupported resolving tunnel";
-        }
         description
           "list of allowed tunnel types";
+      }
+      uses srl-bgp:color-aware-next-hop-resolution {
+        if-feature "srl_nokia-feat:bgp-next-hop-resolution-tag or srl_nokia-feat:isis-flex-algo or srl_nokia-feat:segment-routing-colored-te-policies";
       }
     }
   }
@@ -343,7 +344,9 @@ module srl_nokia-bgp-evpn {
              Ethernet Tag that is advertised in the Auto Discovery per EVI
              route. Configurable on network instances of type vpws.";
           leaf name {
-            type srl_nokia-comm:name;
+            type srl_nokia-comm:name {
+              length "1..32";
+            }
             description
               "The list of local attachment circuits in the network instance";
           }
@@ -392,7 +395,9 @@ module srl_nokia-bgp-evpn {
              route from the remote PE. Configurable on network instances
              of type vpws.";
           leaf name {
-            type srl_nokia-comm:name;
+            type srl_nokia-comm:name {
+              length "1..32";
+            }
             description
               "The list of remote attachment circuits in the network instance";
           }
@@ -441,6 +446,7 @@ module srl_nokia-bgp-evpn {
     description
       "Grouping containing the configuration and state of network instance mpls attributes";
     leaf control-word {
+      if-feature "srl_nokia-feat:evpn-mpls-control-word";
       type boolean;
       must '. = false() or (. = true() and (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = "srl_nokia-netinst:mac-vrf" or "srl_nokia-netinst:vpws"))' {
         error-message "The control-word can only be enabled on network-instances of type mac-vrf or vpws";
@@ -452,6 +458,23 @@ module srl_nokia-bgp-evpn {
          When set to true, the router pushes the control-word below the bottom of the stack label. This
          prevents the Provider routers from mistakenly decode the payload of EVPN packets as an IP header
          and misorder packets of the same flow.";
+    }
+    leaf flow-label {
+      if-feature "srl_nokia-feat:flow-aware-transport-label-evpn-mpls-vpws";
+      type boolean;
+      must '. = false() or (. = true() and (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = "srl_nokia-netinst:vpws"))' {
+        error-message "The flow-label for EVPN can only be enabled on network-instances of type vpws";
+      }
+      default "false";
+      description
+        "Configures the use of flow-label for EVPN MPLS packets
+
+         When set to true, the router signals the use of the Flow Aware Transport (FAT) label in the F flag
+         of the Layer 2 attributes extended community sent along with the EVPN routes (AD per EVI for VPWS or
+         Inclusive Multicast Ethernet Tag route for MAC-VRF). For EVPN VPWS network instances, if the local
+         and remote flags are set to 1 and match, the flow label is pushed at the bottom of the stack. On
+         reception, the flow label is also expected and packets without it are dropped. If there is a
+         mismatch between the local and remote F flags, the EVPN destination is removed.";
     }
   }
 
@@ -465,7 +488,7 @@ module srl_nokia-bgp-evpn {
         "bgp evpn instances configured in net-instance";
       leaf id {
         type leafref {
-          path "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../name]/srl_nokia-netinst:protocols/srl_bgp-vpn:bgp-vpn/srl_bgp-vpn:bgp-instance/srl_bgp-vpn:id";
+          path "/srl_nokia-netinst:network-instance/srl_nokia-netinst:protocols/srl_bgp-vpn:bgp-vpn/srl_bgp-vpn:bgp-instance/srl_bgp-vpn:id";
         }
       }
       leaf admin-state {
@@ -483,7 +506,7 @@ module srl_nokia-bgp-evpn {
             value 1;
           }
           enum mpls {
-            if-feature "srl_nokia-feat:mpls and srl_nokia-feat:evpn-mpls";
+            if-feature "srl_nokia-feat:evpn-mpls";
             value 2;
           }
         }

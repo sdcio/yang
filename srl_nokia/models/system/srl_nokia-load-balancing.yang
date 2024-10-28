@@ -21,6 +21,10 @@ module srl_nokia-load-balancing {
   description
     "This module defines configuration and operational state data related to ECMP and other load-balancing options.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2023-10-31 {
     description
       "SRLinux 23.10.1";
@@ -52,11 +56,11 @@ module srl_nokia-load-balancing {
 
   grouping generic-load-balancing {
     container load-balancing {
-      if-feature "not srl_nokia-feat:platform-vsrl";
+      if-feature "not (srl_nokia-feat:platform-vsrl or srl_nokia-feat:platform-7215-a1)";
       description
         "Adjust system-wide ECMP load balancing options.";
       container hash-options {
-        if-feature "not srl_nokia-feat:future-0-0";
+        if-feature "not srl_nokia-feat:fpcx";
         must 'destination-address = source-address' {
           error-message "Destination address and source address hashing cannot be set differently on this platform";
           srl_nokia-ext:if-feature "srl_nokia-features:jericho2 or srl_nokia-features:jericho2cp";
@@ -68,12 +72,17 @@ module srl_nokia-load-balancing {
         description
           "Container for packet header fields and other inputs used in hashing calculations";
         leaf hash-seed {
-          type uint16;
-          default "0";
+          type union {
+            type uint16;
+            type enumeration {
+              enum generate-from-mac;
+            }
+          }
+          default "generate-from-mac";
           description
-            "A configured hash seed to override the default value of 0
+            "The hash seed to use for random selection of ECMP/LAG members
 
-             Different routers can be configured with different hash-seed values to minimize traffic polarization effects. This hash-seed is used by all hash-related CRC calculations including those take IP header fields, those that take Ethernet header fields and those that take MPLS labels.";
+             To avoid polarization effects, directly-connected nodes should have unique hash-seeds. This can be achieved through explicit configuration of the hash-seed, or using the generate-from-mac option (which is the default), and checking that the auto-generated hash-seed is in fact unique (by reading the state value of this leaf).";
         }
         leaf destination-address {
           description
@@ -130,7 +139,7 @@ module srl_nokia-load-balancing {
       leaf lsr-profile {
         description
           "Adjust system-wide LSR ECMP load balancing options.";
-        if-feature "srl_nokia-feat:future-0-0";
+        if-feature "srl_nokia-feat:fpcx";
         type enumeration {
           enum label-stack {
             description

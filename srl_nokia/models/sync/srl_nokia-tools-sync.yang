@@ -18,6 +18,10 @@ module srl_nokia-tools-sync {
   description
     "Model for operational commands on time protocols and statstics";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -116,6 +120,7 @@ module srl_nokia-tools-sync {
             }
           }
           list port-ds-configured-peer {
+            if-feature "srl_nokia-feat:sync-ptp-ip-peers";
             key "port-index";
             description
               "Grouping for PTP Port DS for configured IP peers operational commands";
@@ -131,6 +136,7 @@ module srl_nokia-tools-sync {
             }
           }
           list port-ds-discovered-peer {
+            if-feature "srl_nokia-feat:sync-ptp-ip-peers";
             key "port-index";
             description
               "Grouping for PTP Port DS for discovered IP peers operational commands";
@@ -146,6 +152,7 @@ module srl_nokia-tools-sync {
             }
           }
           container inactive-peers {
+            if-feature "srl_nokia-feat:sync-ptp-ip-peers";
             leaf clear {
               type empty;
               description

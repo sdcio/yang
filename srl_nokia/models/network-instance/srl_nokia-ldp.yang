@@ -36,6 +36,10 @@ module srl_nokia-ldp {
   description
     "This YANG module defines the configuration and state components for the management of the MPLS Label Distribution Protocol (LDP)";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -73,6 +77,35 @@ module srl_nokia-ldp {
       }
       description
         "Reference to a specific subinterface that is bound to the network instance";
+    }
+  }
+
+  grouping intf-oper-down-reason {
+    leaf intf-oper-down-reason {
+      config false;
+      description
+        "Reason for the LDP interface being down";
+      type enumeration {
+        enum ldp-interface-admin-down;
+        enum ldp-instance-oper-down;
+        enum network-instance-subinterface-down;
+        enum out-of-resources;
+        enum unknown;
+      }
+    }
+  }
+
+  grouping target-oper-down-reason {
+    leaf target-oper-down-reason {
+      config false;
+      description
+        "Reason for the targeted LDP adjacency being down";
+      type enumeration {
+        enum target-admin-down;
+        enum ldp-instance-oper-down;
+        enum out-of-resources;
+        enum unknown;
+      }
     }
   }
 
@@ -733,6 +766,38 @@ module srl_nokia-ldp {
     }
   }
 
+  grouping instance-level-statistics {
+    description
+      "LDP instance level statistics";
+    leaf total-discovery-interfaces {
+      type uint16;
+      description
+        "The total number of IP subinterfaces on which basic LDP discovery is active";
+    }
+    leaf total-discovery-targets {
+      if-feature "srl_nokia-feat:ldp-targeted";
+      type uint16;
+      description
+        "The total number of configured extended discovery targets";
+    }
+    leaf total-interface-hello-adjacencies {
+      type uint16;
+      description
+        "The total number of interface hello adjacencies that are up";
+    }
+    leaf total-targeted-hello-adjacencies {
+      if-feature "srl_nokia-feat:ldp-targeted";
+      type uint16;
+      description
+        "The total number of targeted hello adjacencies that are up";
+    }
+    leaf total-peers {
+      type uint16;
+      description
+        "The total number of LDP TCP sessions that are established";
+    }
+  }
+
   grouping fec-statistics {
     container fec-statistics {
       container ipv4-prefix {
@@ -895,6 +960,7 @@ module srl_nokia-ldp {
           "Peer IP address, LSR-id";
       }
       leaf binding-oper-state {
+        srl_nokia-ext:show-importance "high";
         description
           "Operational state of the binding";
         type enumeration {
@@ -903,6 +969,7 @@ module srl_nokia-ldp {
         }
       }
       leaf binding-oper-down-reason {
+        srl_nokia-ext:show-importance "high";
         description
           "The reason why the binding is operationally down";
         type enumeration {
@@ -917,11 +984,13 @@ module srl_nokia-ldp {
         description
           "Configuration and state related to advertised service FECs";
         leaf label {
+          srl_nokia-ext:show-importance "high";
           type srl_nokia-comm:mpls-label-with-implicit-and-explicit-null;
           description
             "The received label from the remote peer";
         }
         leaf-list label-status {
+          srl_nokia-ext:show-importance "high";
           description
             "The status of the advertised label";
           type enumeration {
@@ -942,6 +1011,18 @@ module srl_nokia-ldp {
           description
             "Whether control word capability is advertised";
         }
+        leaf flow-aware-transport-label-transmit-capability {
+          if-feature "srl_nokia-feat:flow-aware-transport-label";
+          type boolean;
+          description
+            "Whether the capability to transmit the flow-aware transport label is advertised to the peer";
+        }
+        leaf flow-aware-transport-label-receive-capability {
+          if-feature "srl_nokia-feat:flow-aware-transport-label";
+          type boolean;
+          description
+            "Whether the capability to receive the flow-aware transport label is advertised to the peer";
+        }
         leaf pw-status {
           type boolean;
           description
@@ -949,6 +1030,7 @@ module srl_nokia-ldp {
              supports pseudowire status signaling";
         }
         leaf-list signaling-status {
+          srl_nokia-ext:show-importance "high";
           type pseudowire-status-bits;
           description
             "Indicates the signaling status";
@@ -963,11 +1045,13 @@ module srl_nokia-ldp {
         description
           "Configuration and state related to received service FECs";
         leaf label {
+          srl_nokia-ext:show-importance "high";
           type srl_nokia-comm:mpls-label-with-implicit-and-explicit-null;
           description
             "The received label from the remote peer";
         }
         leaf-list label-status {
+          srl_nokia-ext:show-importance "high";
           description
             "The status of the received label";
           type enumeration {
@@ -988,6 +1072,18 @@ module srl_nokia-ldp {
           description
             "Whether control word capability is received";
         }
+        leaf flow-aware-transport-label-transmit-capability {
+          if-feature "srl_nokia-feat:flow-aware-transport-label";
+          type boolean;
+          description
+            "Whether the capability to transmit the flow-aware transport label is received from the peer";
+        }
+        leaf flow-aware-transport-label-receive-capability {
+          if-feature "srl_nokia-feat:flow-aware-transport-label";
+          type boolean;
+          description
+            "Whether the capability to receive the flow-aware transport label is received from the peer";
+        }
         leaf pw-status {
           type boolean;
           description
@@ -995,6 +1091,7 @@ module srl_nokia-ldp {
              supports pseudowire status signaling";
         }
         leaf-list signaling-status {
+          srl_nokia-ext:show-importance "high";
           type pseudowire-status-bits;
           description
             "Indicates the signaling status";
@@ -1039,6 +1136,16 @@ module srl_nokia-ldp {
 
            The label block may show as unavailable if there is pending cleanup";
       }
+      leaf tunnel-down-damp-time {
+        if-feature "srl_nokia-feat:ldp-tunnel-down-damp-time";
+        type uint8 {
+          range "0..20";
+        }
+        default "3";
+        units "seconds";
+        description
+          "Configure the time interval that LDP damps a tunnel down event";
+      }
       uses ldp-entropy-label;
       container loopfree-alternate {
         if-feature "srl_nokia-feat:ldp-lfa";
@@ -1082,12 +1189,6 @@ module srl_nokia-ldp {
           must '. = false()' {
             error-message "Only pop operation is supported. Swap must be set to false";
           }
-        }
-        leaf advertised-label {
-          config false;
-          description
-            "The value indicates the value of the label that was advertised to the upstream peer";
-          type srl_nokia-comm:mpls-label-with-implicit-and-explicit-null;
         }
       }
       uses graceful-restart-config;
@@ -1195,131 +1296,135 @@ module srl_nokia-ldp {
               }
             }
           }
-          list received-prefix-fecs {
-            description
-              "List of IPv4 FEC-label bindings received from LDP peers";
-            key "fec lsr-id label-space-id";
-            leaf fec {
-              type srl_nokia-comm:ipv4-prefix;
+          container received-prefix-fec {
+            list prefix-fec {
               description
-                "The prefix FEC value in the FEC-label binding, learned in a Label Mapping message received from a peer";
-            }
-            uses ldp-peer-ref {
-              description
-                "The LDP peer from which this binding was received. The peer is identified by its LDP ID, which consists of the LSR ID and the Label Space ID";
-            }
-            leaf label {
-              type srl_nokia-comm:mpls-label-with-implicit-and-explicit-null;
-              description
-                "Received label value";
-            }
-            leaf entropy-label-transmit {
-              description
-                "Entropy label (EL/ELI) is pushed when transmitting to this peer";
-              type boolean;
-            }
-            leaf ingress-lsr-fec {
-              description
-                "When set true, the router is an ingress LSR for the FEC";
-              type boolean;
-            }
-            list next-hop {
-              description
-                "List of ECMP next-hops towards the LDP peer";
-              key "index";
-              leaf index {
+                "List of IPv4 FEC-label bindings received from LDP peers";
+              key "fec lsr-id label-space-id";
+              leaf fec {
+                type srl_nokia-comm:ipv4-prefix;
                 description
-                  "Label ID index entry";
-                type uint32;
+                  "The prefix FEC value in the FEC-label binding, learned in a Label Mapping message received from a peer";
               }
-              leaf next-hop {
-                type srl_nokia-comm:ip-address;
+              uses ldp-peer-ref {
                 description
-                  " The IP next-hop towards the LDP peer";
+                  "The LDP peer from which this binding was received. The peer is identified by its LDP ID, which consists of the LSR ID and the Label Space ID";
               }
-              leaf next-hop-type {
-                description
-                  "Type of next-hop";
-                type enumeration {
-                  enum primary;
-                  enum alternate;
-                  enum rlfa;
-                }
-              }
-              leaf interface {
-                type srl_nokia-comm:subinterface-eth-lag;
-                description
-                  "The outgoing interface towards the LDP peer";
-              }
-              leaf outer-label {
+              leaf label {
                 type srl_nokia-comm:mpls-label-with-implicit-and-explicit-null;
                 description
-                  "Outer label value for RLFA";
+                  "Received label value";
               }
-            }
-            leaf used-in-forwarding {
-              type boolean;
-              description
-                "Reads true if the label is used in forwarding and has been programmed for a push operation";
-            }
-            leaf not-used-reason {
-              description
-                "The reason why the label mapping is not being used in the dataplane";
-              type enumeration {
-                enum rejected-on-rx {
+              leaf entropy-label-transmit {
+                description
+                  "Entropy label (EL/ELI) is pushed when transmitting to this peer";
+                type boolean;
+              }
+              leaf ingress-lsr-fec {
+                description
+                  "When set true, the router is an ingress LSR for the FEC";
+                type boolean;
+              }
+              list next-hop {
+                description
+                  "List of ECMP next-hops towards the LDP peer";
+                key "index";
+                leaf index {
                   description
-                    "The received FEC was rejected either because non-host FEC or rejected by import policy";
+                    "Label ID index entry";
+                  type uint32;
                 }
-                enum exceeds-multipath-limit {
+                leaf next-hop {
+                  type srl_nokia-comm:ip-address;
                   description
-                    "The LDP multipath ECMP limit has been reached";
+                    "The IP next-hop towards the LDP peer";
                 }
-                enum exceeds-fec-limit {
+                leaf next-hop-type {
                   description
-                    "The FEC limit has been reached";
+                    "Type of next-hop";
+                  type enumeration {
+                    enum primary;
+                    enum alternate;
+                    enum rlfa;
+                  }
                 }
-                enum fec-unresolved {
+                leaf interface {
+                  type srl_nokia-comm:subinterface-eth-lag;
                   description
-                    "The IP prefix FEC is unused because there is no resolving route matching the IP prefix";
+                    "The outgoing interface towards the LDP peer";
+                }
+                leaf outer-label {
+                  type srl_nokia-comm:mpls-label-with-implicit-and-explicit-null;
+                  description
+                    "Outer label value for RLFA";
+                }
+              }
+              leaf used-in-forwarding {
+                type boolean;
+                description
+                  "Reads true if the label is used in forwarding and has been programmed for a push operation";
+              }
+              leaf not-used-reason {
+                description
+                  "The reason why the label mapping is not being used in the dataplane";
+                type enumeration {
+                  enum rejected-on-rx {
+                    description
+                      "The received FEC was rejected either because non-host FEC or rejected by import policy";
+                  }
+                  enum exceeds-multipath-limit {
+                    description
+                      "The LDP multipath ECMP limit has been reached";
+                  }
+                  enum exceeds-fec-limit {
+                    description
+                      "The FEC limit has been reached";
+                  }
+                  enum fec-unresolved {
+                    description
+                      "The IP prefix FEC is unused because there is no resolving route matching the IP prefix";
+                  }
                 }
               }
             }
           }
-          list advertised-prefix-fecs {
-            description
-              "List of IPv4 FEC-label bindings advertised to LDP peers";
-            key "fec lsr-id label-space-id";
-            leaf fec {
-              type srl_nokia-comm:ipv4-prefix;
+          container advertised-prefix-fec {
+            list prefix-fec {
               description
-                "The prefix FEC value in the FEC-label binding, advertised in a Label Mapping message sent to a peer";
-            }
-            leaf egress-lsr-fec {
-              description
-                "When set true, the router is the egress LSR for the FEC (the FEC is locally originated)";
-              type boolean;
-            }
-            uses ldp-peer-ref {
-              description
-                "The LDP peer towards which this binding was sent. The peer is identified by its LDP ID, which consists of the LSR ID and the Label Space ID";
-            }
-            leaf label {
-              type srl_nokia-comm:mpls-label-with-implicit-and-explicit-null;
-              description
-                "Advertised label value";
-            }
-            leaf label-type {
-              type ldp-label-type;
-              description
-                "The label type of the advertised label";
-            }
-            leaf-list label-status {
-              description
-                "Label status";
-              type enumeration {
-                enum released;
-                enum withdrawn;
-                enum wdraw-pending;
+                "List of IPv4 FEC-label bindings advertised to LDP peers";
+              key "fec lsr-id label-space-id";
+              leaf fec {
+                type srl_nokia-comm:ipv4-prefix;
+                description
+                  "The prefix FEC value in the FEC-label binding, advertised in a Label Mapping message sent to a peer";
+              }
+              leaf egress-lsr-fec {
+                description
+                  "When set true, the router is the egress LSR for the FEC (the FEC is locally originated)";
+                type boolean;
+              }
+              uses ldp-peer-ref {
+                description
+                  "The LDP peer towards which this binding was sent. The peer is identified by its LDP ID, which consists of the LSR ID and the Label Space ID";
+              }
+              leaf label {
+                type srl_nokia-comm:mpls-label-with-implicit-and-explicit-null;
+                description
+                  "Advertised label value";
+              }
+              leaf label-type {
+                type ldp-label-type;
+                description
+                  "The label type of the advertised label";
+              }
+              leaf-list label-status {
+                description
+                  "Label status";
+                type enumeration {
+                  enum released;
+                  enum withdrawn;
+                  enum wdraw-pending;
+                }
               }
             }
           }
@@ -1418,131 +1523,135 @@ module srl_nokia-ldp {
               }
             }
           }
-          list received-prefix-fecs {
-            description
-              "List of IPv6 FEC-label bindings received from LDP peers";
-            key "fec lsr-id label-space-id";
-            leaf fec {
-              type srl_nokia-comm:ipv6-prefix;
+          container received-prefix-fec {
+            list prefix-fec {
               description
-                "The prefix FEC value in the FEC-label binding, learned in a Label Mapping message received from a peer";
-            }
-            uses ldp-peer-ref {
-              description
-                "The LDP peer from which this binding was received. The peer is identified by its LDP ID, which consists of the LSR ID and the Label Space ID";
-            }
-            leaf label {
-              type srl_nokia-comm:mpls-label-with-implicit-and-explicit-null;
-              description
-                "Received label value";
-            }
-            leaf entropy-label-transmit {
-              description
-                "Entropy label (EL/ELI) is pushed when transmitting to this peer";
-              type boolean;
-            }
-            leaf ingress-lsr-fec {
-              description
-                "When set true, the router is an ingress LSR for the FEC";
-              type boolean;
-            }
-            list next-hop {
-              description
-                "List of ECMP next-hops towards the LDP peer";
-              key "index";
-              leaf index {
+                "List of IPv6 FEC-label bindings received from LDP peers";
+              key "fec lsr-id label-space-id";
+              leaf fec {
+                type srl_nokia-comm:ipv6-prefix;
                 description
-                  "Label ID index entry";
-                type uint32;
+                  "The prefix FEC value in the FEC-label binding, learned in a Label Mapping message received from a peer";
               }
-              leaf next-hop {
-                type srl_nokia-comm:ipv6-address;
+              uses ldp-peer-ref {
                 description
-                  "The IP next-hop towards the LDP peer";
+                  "The LDP peer from which this binding was received. The peer is identified by its LDP ID, which consists of the LSR ID and the Label Space ID";
               }
-              leaf next-hop-type {
-                description
-                  "Type of next-hop.";
-                type enumeration {
-                  enum primary;
-                  enum alternate;
-                  enum rlfa;
-                }
-              }
-              leaf interface {
-                type srl_nokia-comm:subinterface-eth-lag;
-                description
-                  "The outgoing interface towards the LDP peer";
-              }
-              leaf outer-label {
+              leaf label {
                 type srl_nokia-comm:mpls-label-with-implicit-and-explicit-null;
                 description
-                  "Outer label value for RLFA";
+                  "Received label value";
               }
-            }
-            leaf used-in-forwarding {
-              type boolean;
-              description
-                "Reads true if the label is used in forwarding and has been programmed for a push operation";
-            }
-            leaf not-used-reason {
-              description
-                "The reason why the label mapping is not being used in the dataplane";
-              type enumeration {
-                enum rejected-on-rx {
+              leaf entropy-label-transmit {
+                description
+                  "Entropy label (EL/ELI) is pushed when transmitting to this peer";
+                type boolean;
+              }
+              leaf ingress-lsr-fec {
+                description
+                  "When set true, the router is an ingress LSR for the FEC";
+                type boolean;
+              }
+              list next-hop {
+                description
+                  "List of ECMP next-hops towards the LDP peer";
+                key "index";
+                leaf index {
                   description
-                    "The received FEC was rejected either because non-host FEC or rejected by import policy";
+                    "Label ID index entry";
+                  type uint32;
                 }
-                enum exceeds-multipath-limit {
+                leaf next-hop {
+                  type srl_nokia-comm:ip-address;
                   description
-                    "The LDP multipath ECMP limit has been reached";
+                    "The IP next-hop towards the LDP peer";
                 }
-                enum exceeds-fec-limit {
+                leaf next-hop-type {
                   description
-                    "The FEC limit has been reached";
+                    "Type of next-hop";
+                  type enumeration {
+                    enum primary;
+                    enum alternate;
+                    enum rlfa;
+                  }
                 }
-                enum fec-unresolved {
+                leaf interface {
+                  type srl_nokia-comm:subinterface-eth-lag;
                   description
-                    "The IP prefix FEC is unused because there is no resolving route matching the IP prefix";
+                    "The outgoing interface towards the LDP peer";
+                }
+                leaf outer-label {
+                  type srl_nokia-comm:mpls-label-with-implicit-and-explicit-null;
+                  description
+                    "Outer label value for RLFA";
+                }
+              }
+              leaf used-in-forwarding {
+                type boolean;
+                description
+                  "Reads true if the label is used in forwarding and has been programmed for a push operation";
+              }
+              leaf not-used-reason {
+                description
+                  "The reason why the label mapping is not being used in the dataplane";
+                type enumeration {
+                  enum rejected-on-rx {
+                    description
+                      "The received FEC was rejected either because non-host FEC or rejected by import policy";
+                  }
+                  enum exceeds-multipath-limit {
+                    description
+                      "The LDP multipath ECMP limit has been reached";
+                  }
+                  enum exceeds-fec-limit {
+                    description
+                      "The FEC limit has been reached";
+                  }
+                  enum fec-unresolved {
+                    description
+                      "The IP prefix FEC is unused because there is no resolving route matching the IP prefix";
+                  }
                 }
               }
             }
           }
-          list advertised-prefix-fecs {
-            description
-              "List of IPv6 FEC-label bindings advertised to LDP peers";
-            key "fec lsr-id label-space-id";
-            leaf fec {
-              type srl_nokia-comm:ipv6-prefix;
+          container advertised-prefix-fec {
+            list prefix-fec {
               description
-                "The prefix FEC value in the FEC-label binding, advertised in a Label Mapping message sent to a peer";
-            }
-            leaf egress-lsr-fec {
-              description
-                "When set true, the router is the egress LSR for the FEC (the FEC is locally originated)";
-              type boolean;
-            }
-            uses ldp-peer-ref {
-              description
-                "The LDP peer towards which this binding was sent. The peer is identified by its LDP ID, which consists of the LSR ID and the Label Space ID";
-            }
-            leaf label {
-              type srl_nokia-comm:mpls-label-with-implicit-and-explicit-null;
-              description
-                "Advertised label value";
-            }
-            leaf label-type {
-              type ldp-label-type;
-              description
-                "The label type of the advertised label";
-            }
-            leaf-list label-status {
-              description
-                "Label status";
-              type enumeration {
-                enum released;
-                enum withdrawn;
-                enum wdraw-pending;
+                "List of IPv6 FEC-label bindings advertised to LDP peers";
+              key "fec lsr-id label-space-id";
+              leaf fec {
+                type srl_nokia-comm:ipv6-prefix;
+                description
+                  "The prefix FEC value in the FEC-label binding, advertised in a Label Mapping message sent to a peer";
+              }
+              leaf egress-lsr-fec {
+                description
+                  "When set true, the router is the egress LSR for the FEC (the FEC is locally originated)";
+                type boolean;
+              }
+              uses ldp-peer-ref {
+                description
+                  "The LDP peer towards which this binding was sent. The peer is identified by its LDP ID, which consists of the LSR ID and the Label Space ID";
+              }
+              leaf label {
+                type srl_nokia-comm:mpls-label-with-implicit-and-explicit-null;
+                description
+                  "Advertised label value";
+              }
+              leaf label-type {
+                type ldp-label-type;
+                description
+                  "The label type of the advertised label";
+              }
+              leaf-list label-status {
+                description
+                  "Label status";
+                type enumeration {
+                  enum released;
+                  enum withdrawn;
+                  enum wdraw-pending;
+                }
               }
             }
           }
@@ -1579,9 +1688,10 @@ module srl_nokia-ldp {
             uses ldp-subintf-ref;
             uses discovery-timers;
             container ipv4 {
+              uses intf-oper-down-reason;
               leaf admin-state {
                 type srl_nokia-comm:admin-state;
-                default "enable";
+                default "disable";
                 description
                   "Administratively enable or disable LDP discovery for IPv4 on a particular interface";
               }
@@ -1594,31 +1704,26 @@ module srl_nokia-ldp {
                   enum down;
                 }
               }
-              leaf oper-down-reason {
-                config false;
-                description
-                  "Reason for the LDP interface being down from an IPv4 perspective";
-                type enumeration {
-                  enum ldp-interface-admin-down;
-                  enum ldp-instance-oper-down;
-                  enum network-instance-subinterface-down;
-                  enum out-of-resources;
-                  enum unknown;
-                }
-              }
               leaf last-oper-state-change {
                 config false;
                 description
                   "The last time when the IPv4 oper-state changed";
                 type srl_nokia-comm:date-and-time-delta;
               }
-              leaf local-interface-lsr-id {
+              container override-lsr-id {
                 if-feature "srl_nokia-feat:ldp-local-lsr-id";
                 description
-                  "Set to true to use the local interface IP address as the LSR ID.
-                   When set to false, the system interface IP address is used as the LSR ID";
-                type boolean;
-                default "false";
+                  "Options to override the LSR ID";
+                leaf local-subinterface {
+                  type enumeration {
+                    enum ipv4 {
+                      description
+                        "Use the IPv4 address of the subinterface as the LSR ID";
+                    }
+                  }
+                  description
+                    "Use local subinterface IP address as LSR ID for interface LDP session";
+                }
               }
               leaf enable-bfd {
                 if-feature "srl_nokia-feat:ldp-bfd";
@@ -1680,6 +1785,7 @@ module srl_nokia-ldp {
             }
             container ipv6 {
               if-feature "srl_nokia-feat:ldp-ipv6";
+              uses intf-oper-down-reason;
               leaf admin-state {
                 type srl_nokia-comm:admin-state;
                 default "disable";
@@ -1695,31 +1801,33 @@ module srl_nokia-ldp {
                   enum down;
                 }
               }
-              leaf oper-down-reason {
-                config false;
-                description
-                  "Reason for the LDP interface being down from an IPv6 perspective";
-                type enumeration {
-                  enum ldp-interface-admin-down;
-                  enum ldp-instance-oper-down;
-                  enum network-instance-subinterface-down;
-                  enum out-of-resources;
-                  enum unknown;
-                }
-              }
               leaf last-oper-state-change {
                 config false;
                 description
                   "The last time when the IPv6 oper-state changed";
                 type srl_nokia-comm:date-and-time-delta;
               }
-              leaf local-interface-lsr-id {
+              container override-lsr-id {
                 if-feature "srl_nokia-feat:ldp-local-lsr-id";
                 description
-                  "Set to true to use the local interface IP address as the LSR ID.
-                   When set to false, the system interface IP address is used as the LSR ID";
-                type boolean;
-                default "false";
+                  "Options to override the LSR ID";
+                leaf local-subinterface {
+                  type enumeration {
+                    enum ipv4 {
+                      description
+                        "Use the IPv4 address of the subinterface as the LSR ID";
+                    }
+                    enum ipv6 {
+                      description
+                        "Use the IPv6 address of the subinterface as the LSR ID";
+                    }
+                  }
+                  description
+                    "Use local subinterface IP address as LSR ID for interface LDP session";
+                  must "(. = 'ipv6') or not(../../../ipv4/override-lsr-id/local-subinterface)" {
+                    error-message "IPv4 and IPv6 are mutually exclusive options";
+                  }
+                }
               }
               leaf enable-bfd {
                 if-feature "srl_nokia-feat:ldp-bfd";
@@ -1798,6 +1906,7 @@ module srl_nokia-ldp {
               key "remote-address";
               description
                 "List of configured targeted LDP peers";
+              uses target-oper-down-reason;
               leaf remote-address {
                 type srl_nokia-comm:ipv4-address;
                 description
@@ -1805,7 +1914,7 @@ module srl_nokia-ldp {
               }
               leaf admin-state {
                 type srl_nokia-comm:admin-state;
-                default "enable";
+                default "disable";
                 description
                   "Administratively enable or disable the targeted LDP adjacency";
               }
@@ -1818,15 +1927,25 @@ module srl_nokia-ldp {
                   enum down;
                 }
               }
-              leaf oper-down-reason {
+              leaf oper-type {
                 config false;
                 description
-                  "Reason for the targeted LDP adjacency being down";
+                  "The value indicates the operational type of this targeted LDP session.
+                   Session creation can be triggered by a service or can be manually configured as an example.
+                   A session that is originally triggered by service configuration may change to a manual session.";
                 type enumeration {
-                  enum target-admin-down;
-                  enum ldp-instance-oper-down;
-                  enum out-of-resources;
-                  enum unknown;
+                  enum manual {
+                    value 1;
+                  }
+                  enum service {
+                    value 2;
+                  }
+                  enum auto-tx {
+                    value 3;
+                  }
+                  enum auto-rx {
+                    value 4;
+                  }
                 }
               }
               leaf last-oper-state-change {
@@ -1835,12 +1954,17 @@ module srl_nokia-ldp {
                   "The last time when the adjacency oper-state changed";
                 type srl_nokia-comm:date-and-time-delta;
               }
-              leaf override-interface-lsr-id {
+              container override-lsr-id {
                 if-feature "srl_nokia-feat:ldp-local-lsr-id";
                 description
-                  "Reference to an LDP interface or loopback interface whose address is to be used as local LSR ID.
-                   If not specified, the LSR ID is derived from the IPv4 address of the system interface";
-                type string;
+                  "Options to override the LSR ID";
+                leaf subinterface-ipv4 {
+                  type srl_nokia-comm:subinterface-all;
+                  description
+                    "Set to use configured subinterface IPv4 address as LSR ID for Targeted LDP session
+
+                     Configured sub-interface must either be an LDP or a loopback interface.";
+                }
               }
               leaf enable-bfd {
                 if-feature "srl_nokia-feat:ldp-bfd";
@@ -1889,6 +2013,40 @@ module srl_nokia-ldp {
                 uses hello-message-error-stats;
               }
             }
+            container auto-rx {
+              if-feature "srl_nokia-feat:ldp-ipv4-auto-rx-tx-targeted";
+              description
+                "Auto-rx targeted LDP";
+              leaf admin-state {
+                type srl_nokia-comm:admin-state;
+                default "disable";
+                description
+                  "Administratively enable or disable auto-rx targeted LDP adjacencies";
+              }
+              leaf advertise-fec {
+                description
+                  "Enable advertisement of FECs to auto-rx targets";
+                type boolean;
+                default "false";
+              }
+            }
+            container auto-tx {
+              if-feature "srl_nokia-feat:ldp-ipv4-auto-rx-tx-targeted";
+              description
+                "Auto-tx targeted LDP";
+              leaf admin-state {
+                type srl_nokia-comm:admin-state;
+                default "disable";
+                description
+                  "Administratively enable or disable auto-tx targeted LDP adjacencies";
+              }
+              leaf advertise-fec {
+                description
+                  "Enable advertisement of FECs to auto-tx targets";
+                type boolean;
+                default "false";
+              }
+            }
           }
           container ipv6 {
             if-feature "srl_nokia-feat:ldp-ipv6";
@@ -1896,6 +2054,7 @@ module srl_nokia-ldp {
               key "remote-address";
               description
                 "List of configured targeted LDP peers";
+              uses target-oper-down-reason;
               leaf remote-address {
                 type srl_nokia-comm:ipv6-address;
                 description
@@ -1903,7 +2062,7 @@ module srl_nokia-ldp {
               }
               leaf admin-state {
                 type srl_nokia-comm:admin-state;
-                default "enable";
+                default "disable";
                 description
                   "Administratively enable or disable the targeted LDP adjacency";
               }
@@ -1916,15 +2075,25 @@ module srl_nokia-ldp {
                   enum down;
                 }
               }
-              leaf oper-down-reason {
+              leaf oper-type {
                 config false;
                 description
-                  "Reason for the targeted LDP adjacency being down";
+                  "The value indicates the operational type of this targeted LDP session.
+                   Session creation can be triggered by a service or can be manually configured as an example.
+                   A session that is originally triggered by service configuration may change to a manual session.";
                 type enumeration {
-                  enum target-admin-down;
-                  enum ldp-instance-oper-down;
-                  enum out-of-resources;
-                  enum unknown;
+                  enum manual {
+                    value 1;
+                  }
+                  enum service {
+                    value 2;
+                  }
+                  enum auto-tx {
+                    value 3;
+                  }
+                  enum auto-rx {
+                    value 4;
+                  }
                 }
               }
               leaf last-oper-state-change {
@@ -1933,12 +2102,27 @@ module srl_nokia-ldp {
                   "The last time when the adjacency oper-state changed";
                 type srl_nokia-comm:date-and-time-delta;
               }
-              leaf override-interface-lsr-id {
+              container override-lsr-id {
                 if-feature "srl_nokia-feat:ldp-local-lsr-id";
                 description
-                  "Reference to an LDP interface or loopback interface whose address is to be used as local LSR ID.
-                   If not specified, the LSR ID is derived from the IPv4 address of the system interface";
-                type string;
+                  "Options to override the LSR ID";
+                leaf subinterface-ipv4 {
+                  type srl_nokia-comm:subinterface-all;
+                  description
+                    "Set to use configured subinterface IPv4 address as LSR ID for Targeted LDP session
+
+                     Configured sub-interface must either be an LDP or a loopback interface.";
+                  must 'not(../subinterface-ipv6)' {
+                    error-message "IPv4 and IPv6 are mutually exclusive options";
+                  }
+                }
+                leaf subinterface-ipv6 {
+                  type srl_nokia-comm:subinterface-all;
+                  description
+                    "Set to use configured subinterface IPv6 address as LSR ID for Targeted LDP session
+
+                     Configured sub-interface must either be an LDP or a loopback interface.";
+                }
               }
               leaf enable-bfd {
                 if-feature "srl_nokia-feat:ldp-bfd";
@@ -2021,6 +2205,9 @@ module srl_nokia-ldp {
           }
           leaf label-space-id {
             type uint16;
+            must '. = 0' {
+              error-message "Label space-id must be 0";
+            }
             description
               "The Label Space ID of the peer, to identify a specific label space within the LSR. This is the last two octets of the LDP ID. This leaf is used together with the leaf 'lsr-id' to form the LDP ID";
           }
@@ -2058,32 +2245,11 @@ module srl_nokia-ldp {
         config false;
         description
           "LDP instance level statistics";
-        leaf total-discovery-interfaces {
-          type uint16;
-          description
-            "The total number of IP subinterfaces on which basic LDP discovery is active";
+        container ipv4 {
+          uses instance-level-statistics;
         }
-        leaf total-discovery-targets {
-          if-feature "srl_nokia-feat:ldp-targeted";
-          type uint16;
-          description
-            "The total number of configured extended discovery targets";
-        }
-        leaf total-interface-hello-adjacencies {
-          type uint16;
-          description
-            "The total number of interface hello adjacencies that are up";
-        }
-        leaf total-targeted-hello-adjacencies {
-          if-feature "srl_nokia-feat:ldp-targeted";
-          type uint16;
-          description
-            "The total number of targeted hello adjacencies that are up";
-        }
-        leaf total-peers {
-          type uint16;
-          description
-            "The total number of LDP TCP sessions that are established";
+        container ipv6 {
+          uses instance-level-statistics;
         }
         leaf sessions-terminated-holdtime-expiry {
           type uint16;

@@ -33,6 +33,10 @@ module srl_nokia-macsec {
   description
     "This module models MKA and macsec configuration under a subinterface";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -349,6 +353,7 @@ module srl_nokia-macsec {
       config false;
       type binary {
         length "12";
+        srl_nokia-ext:output-flavor "hex";
       }
       description
         "Indicates the Member Identifier (MI) for the MKA instance";
@@ -357,6 +362,7 @@ module srl_nokia-macsec {
       config false;
       type binary {
         length "8";
+        srl_nokia-ext:output-flavor "hex";
       }
       description
         "Indicates the Secure Channel Identifier (SCI) information for transmitting MACsec frames";
@@ -401,6 +407,7 @@ module srl_nokia-macsec {
       config false;
       type binary {
         length "16";
+        srl_nokia-ext:output-flavor "hex";
       }
       description
         "Indicates the Key Identifier (KI) of the latest SAK
@@ -411,6 +418,7 @@ module srl_nokia-macsec {
       config false;
       type binary {
         length "16";
+        srl_nokia-ext:output-flavor "hex";
       }
       description
         "Indicates the Key Identifier (KI) of the previous SAK
@@ -437,11 +445,12 @@ module srl_nokia-macsec {
       leaf member-id {
         type binary {
           length "12";
+          srl_nokia-ext:output-flavor "hex";
         }
         description
           "Specifies the MI of the peer entry";
       }
-      leaf member-number {
+      leaf message-number {
         type srl_nokia-comm:counter64;
         description
           "Indicates the latest Member Number of the peer entry";
@@ -465,6 +474,7 @@ module srl_nokia-macsec {
       leaf sci {
         type binary {
           length "8";
+          srl_nokia-ext:output-flavor "hex";
         }
         description
           "Indicates the SCI information of this peer list entry";

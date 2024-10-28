@@ -36,6 +36,10 @@ module srl_nokia-system-network-instance-bgp-evpn-ethernet-segments {
   description
     "This yang file models configuration and state of the bgp-evpn ethernet segments.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2023-10-31 {
     description
       "SRLinux 23.10.1";
@@ -73,12 +77,8 @@ module srl_nokia-system-network-instance-bgp-evpn-ethernet-segments {
   typedef df-algorithm-type {
     type enumeration {
       enum default;
-      enum preference {
-        if-feature "srl_nokia-feat:evpn-mh-pref-alg";
-      }
-      enum manual {
-        if-feature "srl_nokia-feat:evpn-mh-manual-alg";
-      }
+      enum preference;
+      enum manual;
     }
     description
       "Designated Forwarder algorithm type.
@@ -187,7 +187,6 @@ module srl_nokia-system-network-instance-bgp-evpn-ethernet-segments {
         }
       }
       container interface-standby-signaling-on-non-df {
-        if-feature "srl_nokia-feat:evpn-mh-single-active";
         presence "Enables standby signaling on a non-Designated Forwarder node";
         must "../algorithm/type = 'preference'" {
           error-message "The algorithm type must be 'preference'";

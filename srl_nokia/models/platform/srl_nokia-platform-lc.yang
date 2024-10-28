@@ -27,6 +27,10 @@ module srl_nokia-platform-lc {
   description
     "This module defines configuration and operational state data related to line cards.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -78,6 +82,30 @@ module srl_nokia-platform-lc {
       description
         "Details the percentage bandwidth available to the fabric for the line card";
     }
+    leaf total-capacity {
+      if-feature "srl-feat:backplane-facing-capacity";
+      config false;
+      type uint64;
+      units "bits per second";
+      description
+        "Total backplane-facing capacity that is available in the presence of no link failures or degradation";
+    }
+    leaf operational-capacity {
+      if-feature "srl-feat:backplane-facing-capacity";
+      config false;
+      type uint64;
+      units "bits per second";
+      description
+        "Total backplane-facing capacity that is currently available based on the active links";
+    }
+    leaf consumed-capacity {
+      if-feature "srl-feat:backplane-facing-capacity";
+      config false;
+      type uint64;
+      units "bits per second";
+      description
+        "Backplane-facing capacity that is consumed by front-panel ports that are connected to the integrated circuit and are operationally up";
+    }
     leaf utilization-ingress {
       config false;
       type srl-comm:gauge64;
@@ -111,7 +139,9 @@ module srl_nokia-platform-lc {
       }
       uses srl-platform:component-common-state-top;
       uses srl-platform:component-common-eeprom;
-      uses srl-platform:component-bios-common;
+      uses srl-platform:component-bios-common {
+        if-feature "not srl-feat:platform-vsrl";
+      }
       uses srl-platform:component-delayed-reboot-state {
         if-feature "srl-feat:chassis";
       }
@@ -130,7 +160,7 @@ module srl_nokia-platform-lc {
           type enumeration {
             enum 0;
             enum 1 {
-              if-feature "srl-feat:platform-7250-ixr-e or srl-feat:platform-7250-ixr-x1b or srl-feat:platform-7250-ixr-x3b or srl-feat:platform-fx1-sdd";
+              if-feature "srl-feat:forwarding-complex-1";
             }
           }
           description
@@ -179,6 +209,70 @@ module srl_nokia-platform-lc {
           }
           uses srl-platform-pipeline:pipeline-counters {
             if-feature "srl-feat:oc-extracted-cpm-traffic-stats";
+          }
+        }
+        container control-plane-traffic {
+          if-feature "srl-feat:forwarding-complex-pipeline-counters";
+          config false;
+          description
+            "Counters related to traffic destined to the control-plane";
+          leaf queued-aggregate {
+            type srl-comm:zero-based-counter64;
+            description
+              "The aggregation of all counters where the switch has enqueued traffic related to the control plane";
+          }
+          leaf queued-bytes-aggregate {
+            type srl-comm:zero-based-counter64;
+            description
+              "The aggregation of all counters in bytes where the switch has enqueued traffic related to the control plane";
+          }
+          leaf dropped-aggregate {
+            type srl-comm:zero-based-counter64;
+            description
+              "The aggregation of all counters where the switch has dropped traffic related to the control plane";
+          }
+          leaf dropped-bytes-aggregate {
+            type srl-comm:zero-based-counter64;
+            description
+              "Te aggregation of all counters in bytes where the switch has dropped traffic related to the control plane";
+          }
+        }
+        container drop-counters {
+          if-feature "srl-feat:forwarding-complex-pipeline-counters";
+          config false;
+          description
+            "State container for forwarding-complex drop counters";
+          leaf adverse-aggregate {
+            type srl-comm:zero-based-counter64;
+            description
+              "Aggregation of all counters incremented when packets are dropped unexpectedly
+
+               This leaf counts packet discarded as result of corrupted programming state or data structures in the forwarding-complex integrated circuit.
+
+               Note: corrupted packets received on ingress interfaces are not counted in this leaf. This is because incoming corrupted packets are not a signal of adverse state within the integrated circuit, but rather of an adjacent entity, such as a cable or transceiver.";
+          }
+          leaf congestion-aggregate {
+            type srl-comm:zero-based-counter64;
+            description
+              "Aggregation of all counters incremeneted when packets are dropped because the aggregate ingress traffic rate exceeds internal performance limits of the integrated circuit";
+          }
+          leaf packet-processing-aggregate {
+            type srl-comm:zero-based-counter64;
+            description
+              "Aggregation of all counters incremented when packets are dropped due to legitimate programming decisions
+
+               This is derived by summing:
+               * subinterface-level in-discarded counters (counts FIB lookup failures, packets dropped due to ACL drop action, packets dropped due to TTL expiry)
+               * subinterface-level out-error counters (packets dropped due to IP MTU exceeded)
+               * port-level out-error counters (packets dropped due to port MTU exceeded)
+               * port-level in-error counters (packets dropped due to MRU exceeded oe packet CRC error)";
+          }
+          leaf no-route {
+            type srl-comm:zero-based-counter64;
+            description
+              "Aggregation of all counters incremented when packets are dropped due to no FIB entry for an IPv4 or IPv6 packet
+
+               This counter and the packet-processing-aggregate counter should be incremented for each no-route packet drop.";
           }
         }
       }

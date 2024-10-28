@@ -21,6 +21,10 @@ module srl_nokia-next-hop-groups {
   description
     "This yang file gives a description of next-hop-groups configuration.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -77,7 +81,7 @@ module srl_nokia-next-hop-groups {
           type srl_nokia-comm:admin-state;
           default "enable";
           description
-            "Used to enable or disable a next-hop group";
+            "Administratively enable or disable this next-hop-group.";
         }
         container blackhole {
           presence "Specifies that the next-hop-group performs a blackhole discard action.";
@@ -110,7 +114,7 @@ module srl_nokia-next-hop-groups {
             type srl_nokia-comm:admin-state;
             default "enable";
             description
-              "Used to enable or disable a particular next-hop";
+              "Administratively enable or disable this next-hop.";
           }
           leaf resolve {
             type boolean;
@@ -129,7 +133,7 @@ module srl_nokia-next-hop-groups {
               error-message "resolve should be set to false for pushed-mpls-label-stack";
             }
             must 'not(../encapsulate-header = "gre")' {
-              error-message "MPLS not supported for GRE tunnel next-hops";
+              error-message "MPLS not supported for next-hops with GRE encapsulation";
             }
             type srl_nokia-comm:mpls-label-with-implicit-and-explicit-null;
             max-elements 1;
@@ -139,8 +143,12 @@ module srl_nokia-next-hop-groups {
                Default is none/empty. Pushing an MPLS label stack is not supported unless the resolve flag is set to false.";
           }
           container failure-detection {
+            if-feature "srl-feat:bfd";
             container enable-bfd {
               presence "Configure BFD within this Next Hop";
+              must "not(../../encapsulate-header = 'gre')" {
+                error-message "BFD not supported for next-hops with GRE encapsulation";
+              }
               leaf local-address {
                 type srl_nokia-comm:ip-address;
                 description
@@ -174,6 +182,9 @@ module srl_nokia-next-hop-groups {
             type encapsulation-header-type;
             description
               "When forwarding a packet to the specified next-hop the local system performs an encapsulation of the packet, adding the specified header type";
+            must "/srl_nokia-netinst:network-instance[srl_nokia-netinst:name = current()/../../../../srl_nokia-netinst:name]/srl_nokia-netinst:type = 'srl_nokia-netinst:default'" {
+              error-message "Encapsulation only supported on default network instance";
+            }
           }
           container gre {
             must 'not(../ip-address and ./destination-ip)' {
@@ -186,7 +197,7 @@ module srl_nokia-next-hop-groups {
             description
               "Parameters relating to GRE encapsulation";
             leaf source-ip {
-              type srl_nokia-comm:ip-address;
+              type srl_nokia-comm:ip-address-unicast;
               description
                 "Source IP address to use for the encapsulated packet.";
               must '../../encapsulate-header = "gre"' {
@@ -194,7 +205,7 @@ module srl_nokia-next-hop-groups {
               }
             }
             leaf destination-ip {
-              type srl_nokia-comm:ip-address;
+              type srl_nokia-comm:ip-address-unicast;
               description
                 "Destination IP address to use for the encapsulated packet.";
             }

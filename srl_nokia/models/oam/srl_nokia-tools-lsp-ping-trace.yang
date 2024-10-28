@@ -21,6 +21,10 @@ module srl_nokia-tools-lsp-ping-trace {
   description
     "Model for LSP ping and trace operational commands";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -107,6 +111,14 @@ module srl_nokia-tools-lsp-ping-trace {
 
          This should be a non-forwardable address in the 127/8 address block (or the 0:0:0:0:0:FFFF:7F00:0/104 IPv6 address block). Varying this address can help to exercise different ECMP paths towards the destination. By default, the destination address is selected randomly from these address blocks.";
       type srl_nokia-comm:ip-address;
+    }
+    leaf traffic-class {
+      description
+        "MPLS Header Traffic Class/Exp value";
+      type uint8 {
+        range "0..7";
+      }
+      default "7";
     }
   }
 
@@ -198,6 +210,14 @@ module srl_nokia-tools-lsp-ping-trace {
          This should be a non-forwardable address in the 127/8 address block (or the 0:0:0:0:0:FFFF:7F00:0/104 IPv6 address block). Varying this address can help to exercise different ECMP paths towards the destination. By default, the destination address is selected randomly from these address blocks.";
       type srl_nokia-comm:ip-address;
     }
+    leaf traffic-class {
+      description
+        "MPLS Header Traffic Class/Exp value";
+      type uint8 {
+        range "0..7";
+      }
+      default "7";
+    }
   }
 
   grouping sr-isis-ping {
@@ -213,7 +233,20 @@ module srl_nokia-tools-lsp-ping-trace {
              This is the destination that is being pinged.";
           type srl_nokia-comm:ip-prefix;
         }
+        leaf igp-instance {
+          description
+            "ISIS instance id";
+          type uint8 {
+            range "0..255";
+          }
+          default "0";
+        }
         uses ping-common-params;
+      }
+      leaf clear {
+        type empty;
+        description
+          "Clear all SR-ISIS ping session transmit and receive packet counts and all error counts";
       }
     }
   }
@@ -233,6 +266,45 @@ module srl_nokia-tools-lsp-ping-trace {
         }
         uses ping-common-params;
       }
+      leaf clear {
+        type empty;
+        description
+          "Clear all LDP ping session transmit and receive packet counts and all error counts";
+      }
+    }
+  }
+
+  grouping te-policy-ping {
+    container te-policy {
+      if-feature "srl_nokia-feat:mpls-oam-uncolored-tepolicy";
+      description
+        "Parameters required to ping the endpoint of a TE-Policy tunnel";
+      container sr-uncolored {
+        list policy {
+          key "policy-name protocol-origin";
+          leaf policy-name {
+            type srl_nokia-comm:name;
+            description
+              "Name of Uncolored Traffic Engineering Policy to be tested. ny available primary or standby or active secondaty candidate-path can be probed.";
+          }
+          leaf protocol-origin {
+            description
+              "Uncolored Traffic Engrineering Policy, origination source. The method Policy path is computed. This list includes Path Computation Engine, explicitly configured paths, etc.";
+            type srl_nokia-comm:protocol-origin-type;
+          }
+          leaf segment-list-index {
+            type uint32;
+            description
+              "Uncolored Traffic Engineering Policy active segment-list index";
+          }
+          uses ping-common-params;
+        }
+        leaf clear {
+          type empty;
+          description
+            "Clear all uncolored MPLS TE-Policy ping session transmit and receive packet counts and all error counts";
+        }
+      }
     }
   }
 
@@ -249,7 +321,20 @@ module srl_nokia-tools-lsp-ping-trace {
              This is the destination that is being traced.";
           type srl_nokia-comm:ip-prefix;
         }
+        leaf igp-instance {
+          description
+            "ISIS instance id";
+          type uint8 {
+            range "0..255";
+          }
+          default "0";
+        }
         uses trace-common-params;
+      }
+      leaf clear {
+        type empty;
+        description
+          "Clear all SR-ISIS trace session transmit and receive packet counts and all error counts";
       }
     }
   }
@@ -269,6 +354,45 @@ module srl_nokia-tools-lsp-ping-trace {
         }
         uses trace-common-params;
       }
+      leaf clear {
+        type empty;
+        description
+          "Clear all LDP trace session transmit and receive packet counts and all error counts";
+      }
+    }
+  }
+
+  grouping te-policy-trace {
+    container te-policy {
+      if-feature "srl_nokia-feat:mpls-oam-uncolored-tepolicy";
+      description
+        "Parameters required to trace the endpoint of a TE-Policy tunnel";
+      container sr-uncolored {
+        list policy {
+          key "policy-name protocol-origin";
+          leaf policy-name {
+            type srl_nokia-comm:name;
+            description
+              "Name of Uncolored Traffic Engineering Policy which is to be traced. Any available primary or standby or active secondaty candidate-path can be traced.";
+          }
+          leaf protocol-origin {
+            description
+              "Uncolored Traffic Engrineering Policy, origination source. The method Policy path is computed. This list includes Path Computation Engine, explicitly configured paths, etc.";
+            type srl_nokia-comm:protocol-origin-type;
+          }
+          leaf segment-list-index {
+            description
+              "Uncolored Traffic Engineering Policy active segment-list index";
+            type uint32;
+          }
+          uses trace-common-params;
+        }
+        leaf clear {
+          type empty;
+          description
+            "Clear all uncolored MPLS TE-Policy trace session transmit and receive packet counts and all error counts";
+        }
+      }
     }
   }
 
@@ -278,6 +402,7 @@ module srl_nokia-tools-lsp-ping-trace {
         "Initiate LSP ping of the remote endpoint of an MPLS or segment routing tunnel";
       uses sr-isis-ping;
       uses ldp-ping;
+      uses te-policy-ping;
     }
   }
 
@@ -287,6 +412,7 @@ module srl_nokia-tools-lsp-ping-trace {
         "Perform LSP trace of the path towards the remote endpoint of an MPLS or segment routing tunnel";
       uses sr-isis-trace;
       uses ldp-trace;
+      uses te-policy-trace;
     }
   }
 

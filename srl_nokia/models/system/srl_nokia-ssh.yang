@@ -15,6 +15,9 @@ module srl_nokia-ssh {
   import srl_nokia-extensions {
     prefix srl-ext;
   }
+  import srl_nokia-features {
+    prefix srl_nokia-feat;
+  }
 
   organization
     "Nokia";
@@ -24,6 +27,10 @@ module srl_nokia-ssh {
   description
     "This module defines SSH configuration";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -63,8 +70,9 @@ module srl_nokia-ssh {
         "Operational state of the SSH server instance";
     }
     leaf network-instance {
+      if-feature "not srl_nokia-feat:platform-imgmt";
       description
-        "Network instances to run the SSH server in";
+        "Network instance to run the SSH server in";
       type leafref {
         path "/srl-netinst:network-instance/srl-netinst:name";
       }

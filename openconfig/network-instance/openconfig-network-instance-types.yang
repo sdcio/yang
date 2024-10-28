@@ -137,8 +137,8 @@ module openconfig-network-instance-types {
   // identity statements
   identity NETWORK_INSTANCE_TYPE {
     description
-     "A base identity which can be extended to indicate different
-     types of network instance supported by a device.";
+      "A base identity which can be extended to indicate different
+       types of network instance supported by a device.";
   }
 
   identity DEFAULT_INSTANCE {

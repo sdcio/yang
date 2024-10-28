@@ -28,6 +28,10 @@ module srl_nokia-sync-ptp {
     "Nokia SR Linux Support
      Web: <http://www.nokia.com>";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -180,6 +184,9 @@ module srl_nokia-sync-ptp {
     }
     container ip {
       if-feature "srl_nokia-feat:sync-ptp-ip-peers";
+      must '(../network-protocol = "udp-ipv4") or (../network-protocol = "udp-ipv6")' {
+        error-message "ip-address is only relevant for PTP over UDP/IPv4 or UDP/IPv6";
+      }
       leaf network-instance {
         type leafref {
           path "/srl_nokia-netinst:network-instance/srl_nokia-netinst:name";
@@ -1275,6 +1282,7 @@ module srl_nokia-sync-ptp {
           }
           case sync0 {
             container sync0 {
+              if-feature "srl_nokia-feat:sync-ptp-sync-port-support";
               presence "specifies sync0 port as source";
               must '(not (../interface))' {
                 error-message "Only one source for this PTP port may be configured";
@@ -1432,6 +1440,12 @@ module srl_nokia-sync-ptp {
             "The receive message rate from this neighbor clock";
           config false;
         }
+        leaf parent-clock {
+          config false;
+          type boolean;
+          description
+            "Indicates if this neighbor is the current parent clock of this PTP clock";
+        }
       }
     }
     list port-ds-cfg-ip-list {
@@ -1492,21 +1506,20 @@ module srl_nokia-sync-ptp {
       }
       container peer {
         leaf network-instance {
-          mandatory true;
-          must '((/srl_nokia-netinst:network-instance[srl_nokia-netinst:name=current()]/srl_nokia-netinst:type = "srl_nokia-netinst:ip-vrf") or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name=current()]/srl_nokia-netinst:type = "srl_nokia-netinst:default"))' {
-            error-message "Network instance type must be L3 for PTP";
-          }
-          must '((/srl_nokia-netinst:network-instance[srl_nokia-netinst:name=current()]/srl_nokia-netinst:protocols/srl_nokia-sync-ptp:ptp/srl_nokia-sync-ptp:source-address-ipv4) or (/srl_nokia-netinst:network-instance[srl_nokia-netinst:name=current()]/srl_nokia-netinst:protocols/srl_nokia-sync-ptp:ptp/srl_nokia-sync-ptp:source-address-ipv6))' {
-            error-message "Network instance must be defined and have a source-address assigned for PTP";
-          }
+          config false;
           type leafref {
             path "/srl_nokia-netinst:network-instance/srl_nokia-netinst:name";
           }
           description
-            "Network instance that owns the PTP peer";
+            "Network instance used by this peer
+
+             All configured peers use the same network-instance.   It can be configured at the top level of the ptp tree.";
         }
         leaf ip-address {
           mandatory true;
+          must '((../../../../timing-source-net-inst))' {
+            error-message "Timing source network instance must be defined";
+          }
           type srl_nokia-comm:ip-address;
           description
             "IP address for the PTP peer
@@ -1595,6 +1608,64 @@ module srl_nokia-sync-ptp {
         default "128";
         description
           "Specifies the local priority of the ptp port";
+      }
+      leaf clock-identity {
+        type srl_nokia-sync-types:clock-identity-type;
+        config false;
+        description
+          "Identity of the peer clock";
+      }
+      leaf port-number {
+        type uint16;
+        config false;
+        description
+          "Port number of the peer clock";
+      }
+      leaf grandmaster-identity {
+        type srl_nokia-sync-types:clock-identity-type;
+        config false;
+        description
+          "The clockIdentity of the grandmaster clock in the last Announce message received from this peer";
+      }
+      container grandmaster-clock-quality {
+        description
+          "The clock quality of the grandmaster clock in the last Announce message received from this peer";
+        config false;
+        uses clock-quality-grouping;
+      }
+      leaf grandmaster-priority1 {
+        type uint8;
+        config false;
+        description
+          "The priority1 of the grandmaster clock in the last Announce message received from this peer";
+      }
+      leaf grandmaster-priority2 {
+        type uint8;
+        config false;
+        description
+          "The priority2 of the grandmaster clock in the last Announce message received from this peer";
+      }
+      leaf steps-removed {
+        type uint16;
+        config false;
+        description
+          "The stepsRemoved in the last Announce message received from this peer";
+      }
+      leaf last-rx-interface {
+        type leafref {
+          path "/srl_nokia-if:interface/srl_nokia-if:name";
+        }
+        config false;
+        description
+          "Interface used for the last PTP message received from this peer";
+      }
+      leaf last-tx-interface {
+        type leafref {
+          path "/srl_nokia-if:interface/srl_nokia-if:name";
+        }
+        config false;
+        description
+          "Interface used for the last PTP message transmitted to this peer";
       }
       container statistics {
         srl_nokia-ext:stream-mode "sample=2";
@@ -1751,6 +1822,22 @@ module srl_nokia-sync-ptp {
         description
           "The PTP minor version number in use on the port";
       }
+      leaf last-rx-interface {
+        type leafref {
+          path "/srl_nokia-if:interface/srl_nokia-if:name";
+        }
+        config false;
+        description
+          "Interface used for the last PTP message received from this peer";
+      }
+      leaf last-tx-interface {
+        type leafref {
+          path "/srl_nokia-if:interface/srl_nokia-if:name";
+        }
+        config false;
+        description
+          "Interface used for the last PTP message transmitted to this peer";
+      }
       container statistics {
         srl_nokia-ext:stream-mode "sample=2";
         srl_nokia-ext:statistics-node "true";
@@ -1799,6 +1886,7 @@ module srl_nokia-sync-ptp {
       }
     }
     container port-ds-gnss {
+      if-feature "srl_nokia-feat:sync-gnss";
       config false;
       description
         "List of port data sets for the GNSS special PTP port";
@@ -1857,10 +1945,32 @@ module srl_nokia-sync-ptp {
           description
             "ITU-T G.8275.1 (2014) Profile";
         }
+        enum itug8275dot2 {
+          if-feature "srl_nokia-feat:sync-ptp-ip-peers";
+          value 2;
+          description
+            "ITU-T G.8275.2 Profile";
+        }
       }
       default "itug8275dot1";
       description
         "Specifies the PTP profile mode for the PTP clock";
+    }
+    leaf timing-source-net-inst {
+      if-feature "srl_nokia-feat:sync-ptp-ip-peers";
+      must '../ptp-profile = "itug8275dot2"' {
+        error-message "Only supported for PTP profile itug8275dot2 ";
+      }
+      must '((/srl_nokia-netinst:network-instance[srl_nokia-netinst:name=current()]/srl_nokia-netinst:protocols/srl_nokia-sync-ptp:ptp))' {
+        error-message "Network instance must be defined and have PTP protocol enabled";
+      }
+      type leafref {
+        path "/srl_nokia-netinst:network-instance/srl_nokia-netinst:name";
+      }
+      description
+        "Network instance to be used for configured peers
+
+         This is the network instance that will be used to provide timing into the local clock via PTP over IP.";
     }
     list instance {
       key "instance-index";
@@ -1923,6 +2033,7 @@ module srl_nokia-sync-ptp {
            Only unicast IP supported.";
       }
       leaf source-address-ipv6 {
+        if-feature "srl_nokia-feat:sync-ptp-ip-peers-ipv6";
         type srl_nokia-comm:ipv6-address;
         description
           "IPv6 source address to be used for PTP messages sent in this network-instance

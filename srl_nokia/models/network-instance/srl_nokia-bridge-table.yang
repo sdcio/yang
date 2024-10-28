@@ -15,6 +15,10 @@ module srl_nokia-bridge-table {
   description
     "This yang file gives a description of bridge table configuration.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -34,7 +38,7 @@ module srl_nokia-bridge-table {
     container tldp-mac-flush {
       description
         "Targeted Label Distribution Protocol MAC Flush parameters";
-      if-feature "srl-feat:connection-point";
+      if-feature "srl-feat:pseudowire";
       leaf send-flush-on-failure {
         type boolean;
         default "false";

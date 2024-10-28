@@ -13,6 +13,10 @@ module srl_nokia-tools-qos {
     "Nokia SR Linux Support
      Web: <http://www.nokia.com>";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -55,7 +59,7 @@ module srl_nokia-tools-qos {
   }
 
   container qos {
-    if-feature "not srl-feat:platform-7220-d1";
+    if-feature "srl-feat:qos";
     container interfaces {
       presence "Enables configuration of QoS parameters for the interface";
       description
@@ -69,8 +73,16 @@ module srl_nokia-tools-qos {
           description
             "Identifier for the interface or subinterface";
         }
+        container pfc {
+          description
+            "Clearing PFC statisctics on per interface basis";
+          if-feature "srl-feat:qos-pfc";
+          leaf clear-statistics {
+            type empty;
+          }
+        }
         container input {
-          if-feature "(srl-feat:ingress-subif-policing and srl-feat:subif-policer)";
+          if-feature "(srl-feat:ingress-subif-policing and srl-feat:subif-policer) or srl-feat:qos-policer-policies";
         }
         container output {
           container queues {

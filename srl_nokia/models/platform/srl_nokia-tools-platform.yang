@@ -15,6 +15,10 @@ module srl_nokia-tools-platform {
   description
     "Model for operational commands for platform.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2023-07-31 {
     description
       "SRLinux 23.7.1";
@@ -154,7 +158,7 @@ module srl_nokia-tools-platform {
         "Operational commands related to Disk Encryption";
       list control {
         description
-          "Operational commands related Secure Boot for control modules";
+          "Operational commands related to Disk Encryption for control modules";
         key "slot";
         leaf slot {
           type string {
@@ -164,20 +168,14 @@ module srl_nokia-tools-platform {
             "Slot identifier for the control module";
         }
         container activate {
-          presence "Activate Disk Encryption on control module";
+          presence "Activate Disk Encryption for a control module";
           description
-            "Activate Disk Encryption on control module";
-          leaf reboot {
-            type empty;
-          }
+            "Activate Disk Encryption for a control module";
         }
         container generate-recovery-key {
           presence "Generate Disk Encryption recovery key for a control module";
           description
             "Generate Disk Encryption recovery key for a control module";
-          leaf reboot {
-            type empty;
-          }
         }
       }
     }
@@ -260,6 +258,7 @@ module srl_nokia-tools-platform {
       uses locator-tools;
     }
     list fan-tray {
+      if-feature "not srl-feat:platform-7215-a1";
       description
         "Operational commands related to fan modules";
       key "id";

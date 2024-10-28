@@ -27,6 +27,10 @@ module srl_nokia-routing-policy {
   description
     "YANG model for route policies. It supports widely used constructs for managing how routes are imported, exported, and modified across different routing protocols.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -192,7 +196,7 @@ module srl_nokia-routing-policy {
     list tag-set {
       if-feature "srl_nokia-feat:internal-tags";
       key "name";
-      max-elements 255;
+      max-elements 1024;
       description
         "List of administrative tag sets";
       leaf name {
@@ -329,6 +333,12 @@ module srl_nokia-routing-policy {
           must 'not(../remove or ../add)';
         }
       }
+      leaf disable-ip-route-install {
+        if-feature "srl_nokia-feat:routing-policy-bgp-disable-fib";
+        type boolean;
+        description
+          "Accept the route, allowing its re-advertisement, but do not install the route to the IP FIB";
+      }
       container local-preference {
         leaf set {
           type uint32;
@@ -383,6 +393,21 @@ module srl_nokia-routing-policy {
           }
           description
             "The new value of the ORIGIN attribute to write into the matching BGP routes";
+        }
+      }
+      container statistics {
+        if-feature "srl_nokia-feat:bgp-labeled-unicast-tunnel-statistics";
+        description
+          "BGP Labeled unicast tunnel statistics";
+        leaf ingress {
+          type boolean;
+          description
+            "Ingress statistics collection for BGP-LU tunnels";
+        }
+        leaf egress {
+          type boolean;
+          description
+            "Egress statistics collection for BGP-LU tunnels";
         }
       }
       container label-allocation {

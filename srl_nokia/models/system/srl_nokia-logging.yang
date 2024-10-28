@@ -12,6 +12,9 @@ module srl_nokia-logging {
   import srl_nokia-network-instance {
     prefix srl-netinst;
   }
+  import srl_nokia-features {
+    prefix srl-feat;
+  }
 
   organization
     "Nokia";
@@ -21,6 +24,10 @@ module srl_nokia-logging {
   description
     "This module describes a YANG model for system logging.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -119,7 +126,9 @@ module srl_nokia-logging {
         enum mirror;
         enum mld;
         enum mpls;
+        enum netconf;
         enum netinst;
+        enum oam_pm;
         enum ospf;
         enum p4rt;
         enum pcc;
@@ -523,6 +532,7 @@ module srl_nokia-logging {
   }
 
   augment "/srl-system:system" {
+    if-feature "not srl-feat:platform-imgmt";
     uses logging-top;
   }
 }

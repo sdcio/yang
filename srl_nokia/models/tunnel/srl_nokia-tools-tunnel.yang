@@ -7,7 +7,7 @@ module srl_nokia-tools-tunnel {
     prefix srl_nokia-comm;
   }
   import srl_nokia-features {
-    prefix srl_nokia-feat;
+    prefix srl-feat;
   }
   import srl_nokia-extensions {
     prefix srl_nokia-ext;
@@ -19,6 +19,10 @@ module srl_nokia-tools-tunnel {
     "Nokia SR Linux Support
      Web: <http://www.nokia.com>";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2021-03-31 {
     description
       "SRLinux 21.3.1";
@@ -26,10 +30,10 @@ module srl_nokia-tools-tunnel {
 
   grouping tools-tunnel-top {
     container tunnel {
-      srl_nokia-ext:first-released "20.10.1";
       description
-        "This model collects all config and state aspects of the tools-tunnel table
-         in SRLinux.";
+        "Top-level container for the tunnel table.";
+      if-feature "srl-feat:vxlan or srl-feat:pseudowire";
+      srl_nokia-ext:first-released "20.10.1";
     }
   }
 

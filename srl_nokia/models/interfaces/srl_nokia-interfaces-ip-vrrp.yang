@@ -31,6 +31,10 @@ module srl_nokia-interfaces-ip-vrrp {
      management described by RFC 8347.  The primary differences are
      in the structure of configuration and state data.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -103,7 +107,9 @@ module srl_nokia-interfaces-ip-vrrp {
     leaf virtual-router-id {
       description
         "VRRP Group Index";
-      type uint8;
+      type uint8 {
+        range "1..255";
+      }
     }
   }
 
@@ -118,7 +124,9 @@ module srl_nokia-interfaces-ip-vrrp {
       default "100";
       description
         "Base VRRP Priority for associated Virtual Address";
-      type uint8;
+      type uint8 {
+        range "1..254";
+      }
     }
     leaf preempt {
       description
@@ -137,16 +145,20 @@ module srl_nokia-interfaces-ip-vrrp {
     }
     leaf preempt-delay {
       description
-        "Delay before a router preemts an existing master router,
-         only applicable if preemt is enabled";
-      type uint16;
+        "Delay in seconds before a router preempts an existing
+         master router, only applicable if preempt is enabled";
+      type uint16 {
+        range "1..65535";
+      }
     }
     leaf init-delay {
       description
-        "Initialization delay before a router that just rebooted
-         will preemt an existing master router. Only applicable
-         if preemt is enabled";
-      type uint16;
+        "Initialization delay in seconds before a router that
+         just rebooted will preempt an existing master router.
+         Only applicable if preempt is enabled";
+      type uint16 {
+        range "1..65535";
+      }
     }
     leaf accept-mode {
       description
@@ -158,7 +170,9 @@ module srl_nokia-interfaces-ip-vrrp {
       default "1000";
       description
         "The interval between VRRP messages in milliseconds";
-      type uint16;
+      type uint16 {
+        range "1000..40950";
+      }
     }
     container authentication {
       description
@@ -240,6 +254,7 @@ module srl_nokia-interfaces-ip-vrrp {
       default "false";
     }
     leaf oper-interval {
+      config false;
       description
         "The operational advertisement interval between VRRP messages";
       type uint16;
@@ -341,6 +356,12 @@ module srl_nokia-interfaces-ip-vrrp {
   grouping ipv4-vrrp-top {
     container vrrp {
       if-feature "srl_nokia-feat:vrrp";
+      must 'not(../anycast-gw) or ../anycast-gw = false()' {
+        error-message "Only supported if anycast-gw leaf is not true";
+      }
+      must 'not(../../../anycast-gw)' {
+        error-message "Only supported if anycast-gw is not configured";
+      }
       presence "Configure VRRP IPv4";
       description
         "VRRP Configuration and State under a IPv4 context of a
@@ -352,6 +373,7 @@ module srl_nokia-interfaces-ip-vrrp {
         uses vrrp-group-key;
         uses vrrp-group-common-config;
         leaf-list virtual-address {
+          max-elements 1;
           description
             "Associated Virtual IP address.";
           type srl_nokia-comm:ip-address;
@@ -360,7 +382,9 @@ module srl_nokia-interfaces-ip-vrrp {
           default "2";
           description
             "VRRP version for the Instance";
-          type uint8;
+          type uint8 {
+            range "2..3";
+          }
           must '(.=3 or .=2)' {
             error-message "Only version 2 or 3 allowed to be configured";
           }
@@ -372,6 +396,9 @@ module srl_nokia-interfaces-ip-vrrp {
   grouping ipv6-vrrp-top {
     container vrrp {
       if-feature "srl_nokia-feat:vrrp";
+      must 'not(../anycast-gw) or ../anycast-gw = false()' {
+        error-message "Only supported if anycast-gw leaf is not true";
+      }
       presence "Configure VRRP IPv6";
       description
         "VRRP Configuration and State under a IPv6 context of a
@@ -383,6 +410,7 @@ module srl_nokia-interfaces-ip-vrrp {
         uses vrrp-group-key;
         uses vrrp-group-common-config;
         leaf-list virtual-address {
+          max-elements 1;
           description
             "Associated Virtual IP address.";
           type srl_nokia-comm:ipv6-address;
@@ -394,7 +422,9 @@ module srl_nokia-interfaces-ip-vrrp {
           default "3";
           description
             "VRRP version for the Instance";
-          type uint8;
+          type uint8 {
+            range "2..3";
+          }
           must '.=3' {
             error-message "version 3 only allowed for IPv6 instance";
           }

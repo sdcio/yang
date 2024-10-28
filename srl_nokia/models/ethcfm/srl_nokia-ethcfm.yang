@@ -35,6 +35,10 @@ module srl_nokia-ethcfm {
      management of Ethernet Operations, Administration and
      Maintenance for Connectivity Fault Management.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -68,6 +72,7 @@ module srl_nokia-ethcfm {
     description
       "State for per ETH-CFM OpCode statistics";
     list opcode {
+      if-feature "srl_nokia-feat:ethcfm-opcode-stats";
       config false;
       key "opcode-name";
       description
@@ -154,6 +159,9 @@ module srl_nokia-ethcfm {
       type union {
         type srl_nokia-comm:mac-address;
         type string;
+        type binary {
+          srl_nokia-ext:output-flavor "hex-with-colons";
+        }
       }
       description
         "The value relating to the chassis-id-subtype in string of MAC address format";
@@ -425,9 +433,12 @@ module srl_nokia-ethcfm {
               type union {
                 type srl_nokia-comm:mac-address;
                 type string;
+                type binary {
+                  srl_nokia-ext:output-flavor "hex-with-colons";
+                }
               }
               description
-                "The value of the chassis is subtype in string or MAC address form";
+                "The value of the port id subtype";
             }
           }
           leaf egress-action {
@@ -456,9 +467,12 @@ module srl_nokia-ethcfm {
               type union {
                 type srl_nokia-comm:mac-address;
                 type string;
+                type binary {
+                  srl_nokia-ext:output-flavor "hex-with-colons";
+                }
               }
               description
-                "The value of the chassis is subtype in string or MAC address form";
+                "The value of the port id subtype";
             }
           }
         }
@@ -613,11 +627,13 @@ module srl_nokia-ethcfm {
 
   grouping squelching {
     container eth-cfm {
+      if-feature "srl_nokia-feat:ethcfm-subinterface";
       description
         "Configuration of ETH-CFM functions independent of Maintenance Domain context
 
          This is an ETH-CFM function that is configured directly under the subinterface";
       container ingress-squelching {
+        if-feature "srl_nokia-feat:ethcfm-ingress-squelching";
         description
           "Ingress ETH-CFM functions independent of Maintenance Domain context";
         leaf squelch-levels {
@@ -654,6 +670,7 @@ module srl_nokia-ethcfm {
       description
         "OAM configuration and operational data for the management of Ethernet (ETH-CFM)";
       container sender-id {
+        if-feature "srl_nokia-feat:ethcfm-sender-id-tx";
         description
           "Enter the sender-id context";
         leaf chassis-type {
@@ -679,7 +696,7 @@ module srl_nokia-ethcfm {
       }
       list domain {
         description
-          "Maintenance Domain list containing CFM Domain configuration elements
+          "Maintenance Domain list
 
            The Maintenance Domain includes all the configuration elements to define the individual
            domain behavior and scope of the CFM boundary.  These are common elements that will be
@@ -689,66 +706,70 @@ module srl_nokia-ethcfm {
         leaf domain-id {
           type srl_nokia-ethcfm-types:admin-name;
           description
-            "A unique identifier of a Maintenance Domain";
+            "Unique Maintenance Domain identifier";
         }
         leaf domain-format {
           type srl_nokia-ethcfm-types:domain-format-type;
           description
-            "domain format";
+            "Format of the md-name";
           mandatory true;
-          must "not(. = 'dns-like') or ../dns" {
+          must "not(. = 'dns-like') or ../md-name/dns" {
             error-message "md-name 'dns' must be configured";
           }
-          must "not(. = 'mac-address') or (../mac and ../two-octet-int)" {
+          must "not(. = 'mac-address') or (../md-name/mac and ../md-name/two-octet-int >=0)" {
             error-message "md-name 'mac' and 'two-octet-int' must be configured";
           }
-          must "not(. = 'string') or ../name" {
+          must "not(. = 'string') or ../md-name/name" {
             error-message "md-name 'name' must be configured";
           }
         }
-        choice md-name {
-          case dns-like {
-            leaf dns {
-              type string {
-                length "1..43";
+        container md-name {
+          description
+            "Context for domain name";
+          choice md-name {
+            case dns-like {
+              leaf dns {
+                type string {
+                  length "1..43";
+                }
+                must "../../domain-format = 'dns-like'" {
+                  error-message "md-name 'dns' requires domain-format type 'dns-like'";
+                }
+                description
+                  "DNS format sting required when using domain-format 'dns-like'";
               }
-              must "../domain-format = 'dns-like'" {
-                error-message "md-name 'dns' requires domain-format type 'dns-like'";
-              }
-              description
-                "Maintenance Domain DNS like name for domain-format type 'dns-like'";
             }
-          }
-          case mac-address {
-            leaf mac {
-              type string {
-                pattern '[0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5}';
+            case mac-address {
+              leaf mac {
+                type string {
+                  pattern '[0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5}';
+                }
+                must "../../domain-format = 'mac-address'" {
+                  error-message "md-name 'mac' requires domain-format type 'mac-address'";
+                }
+                description
+                  "MAC address string required when using domain-format 'mac-address'";
               }
-              must "../domain-format = 'mac-address'" {
-                error-message "md-name 'mac' requires domain-format type 'mac-address'";
+              leaf two-octet-int {
+                type uint16;
+                must "../../domain-format = 'mac-address'" {
+                  error-message "md-name 'two-octet-int' requires domain-format type 'mac-address'";
+                }
+                description
+                  "Two bytes value required when using domain-format 'mac-address'";
               }
-              description
-                "Maintenance Domain MAC address portion required for domain-format type 'mac-address'";
             }
-            leaf two-octet-int {
-              type uint16;
-              must "../domain-format = 'mac-address'" {
-                error-message "md-name 'two-octet-int' requires domain-format type 'mac-address'";
+            case string {
+              leaf name {
+                type string {
+                  length "1..43";
+                }
+                must "../../domain-format = 'string'" {
+                  error-message "md-name 'name' requires domain-format type 'string'";
+                }
+                description
+                  "Name string required when using domain-format 'string'";
               }
-              description
-                "Maintenance Domain 2-octet integer portion required for domain-format type 'mac-address'";
-            }
-          }
-          case string {
-            leaf name {
-              type string {
-                length "1..43";
-              }
-              must "../domain-format = 'string'" {
-                error-message "md-name 'name' requires domain-format type 'string'";
-              }
-              description
-                "Maintenance Domain name for domain-format 'string'";
             }
           }
         }
@@ -765,87 +786,92 @@ module srl_nokia-ethcfm {
         }
         list association {
           description
-            "The Maintenance Association list is a grouping of MEPs for the same network-instance";
+            "Maintenance Association list";
           key "association-id";
           max-elements 4000;
           leaf association-id {
             type srl_nokia-ethcfm-types:admin-name;
             description
-              "A unique identifier of a Maintenance Association";
+              "Unique Maintenance Association identifier";
           }
           leaf association-format {
             type srl_nokia-ethcfm-types:association-format-type;
             description
-              "association format";
+              "Format of the ma-name";
             mandatory true;
           }
-          choice ma-name {
-            mandatory true;
-            case icc-based {
-              leaf icc-value {
-                type string {
-                  length "8..13";
+          container ma-name {
+            description
+              "Context for association name";
+            choice ma-name {
+              mandatory true;
+              case icc-based {
+                leaf icc-value {
+                  type string {
+                    length "8..13";
+                  }
+                  must "../../association-format = 'icc-based'" {
+                    error-message "ma-name 'icc-value' requires association-format type 'icc-based'";
+                  }
+                  description
+                    "ITU Carrier Code (ICC) string required when using association-format icc-based";
                 }
-                must "../association-format = 'icc-based'" {
-                  error-message "ma-name 'icc-value' requires association-format type 'icc-based'";
-                }
-                description
-                  "Maintenance Association name in ICC-based format";
               }
-            }
-            case integer {
-              leaf number {
-                type uint16;
-                must "../association-format = 'integer'" {
-                  error-message "ma-name 'number' requires association-format type 'integer'";
+              case integer {
+                leaf number {
+                  type uint16;
+                  must "../../association-format = 'integer'" {
+                    error-message "ma-name 'number' requires association-format type 'integer'";
+                  }
+                  description
+                    "Integer value required when using association-format integer";
                 }
-                description
-                  "Maintenance Association name in integer format";
               }
-            }
-            case string {
-              leaf name {
-                type string {
-                  length "1..45";
+              case string {
+                leaf name {
+                  type string {
+                    length "1..45";
+                  }
+                  must "../../association-format = 'string'" {
+                    error-message "ma-name 'name' requires association-format type 'string'";
+                  }
+                  description
+                    "Name string required when using association-format string";
                 }
-                must "../association-format = 'string'" {
-                  error-message "ma-name 'name' requires association-format type 'string'";
-                }
-                description
-                  "Maintenance Association name in string format";
               }
-            }
-            case vlan-id {
-              leaf vid {
-                type uint16 {
-                  range "0..4094";
+              case vlan-id {
+                leaf vid {
+                  type uint16 {
+                    range "0..4094";
+                  }
+                  must "../../association-format = 'vlan-id'" {
+                    error-message "ma-name 'vid' requires association-format type 'vlan-id'";
+                  }
+                  description
+                    "VLAN ID number required when using association-format vlan-id";
                 }
-                must "../association-format = 'vlan-id'" {
-                  error-message "ma-name 'vid' requires association-format type 'vlan-id'";
-                }
-                description
-                  "Maintenance association VLAN ID format";
               }
-            }
-            case vpn-id {
-              leaf id {
-                type string {
-                  length "3..15";
-                  pattern '[0-9a-fA-F]{6}(:[0-9a-fA-F]{8})';
-                }
-                must "../association-format = 'vpn-id'" {
-                  error-message "ma-name 'id' requires association-format type 'vpn-id'";
-                }
-                description
-                  "Maintenance Association VPN ID name
+              case vpn-id {
+                leaf id {
+                  type string {
+                    length "3..15";
+                    pattern '[0-9a-fA-F]{6}(:[0-9a-fA-F]{8})';
+                  }
+                  must "../../association-format = 'vpn-id'" {
+                    error-message "ma-name 'id' requires association-format type 'vpn-id'";
+                  }
+                  description
+                    "VPN ID required when using association-format vpn-id
 
-                   When the VPN OUI is less than 6 hex characters the configured value will be prepended with the appropriate
-                   number of zeros.  When the VPN INDEX is less than 8 hex characters the configured value will be prepended
-                   with the appropriate number of zeros.";
+                     When the VPN OUI is less than 6 hex characters the configured value will be prepended with the appropriate
+                     number of zeros.  When the VPN INDEX is less than 8 hex characters the configured value will be prepended
+                     with the appropriate number of zeros.";
+                }
               }
             }
           }
           leaf sender-id-permission-type {
+            if-feature "srl_nokia-feat:ethcfm-sender-id-tx";
             type srl_nokia-ethcfm-types:id-permission-type;
             default "none";
             description
@@ -876,7 +902,9 @@ module srl_nokia-ethcfm {
             description
               "Enter the ccm-hold-time context";
             leaf delay-timeout {
-              must ". = 0 or ../../ccm-interval = '10ms' or ../../ccm-interval = '300hz' or ../../ccm-interval = '100ms'";
+              must ". = 0 or ../../ccm-interval = '10ms' or ../../ccm-interval = '100ms'" {
+                error-message "ccm-hold-time delay-timeout requires ccm-interval less than one second.";
+              }
               type uint32 {
                 range "0..1000";
               }
@@ -973,19 +1001,19 @@ module srl_nokia-ethcfm {
                 }
                 description
                   "Reference to a base interface, for example a port";
-                must "starts-with(.,'eth') or (starts-with(.,'lag') and ../subinterface)" {
+                must "starts-with(.,'eth')" {
                   error-message "ETH-CFM is supported for Ethernet interfaces only";
                 }
                 must 'not(/srl_nokia-if:interface[srl_nokia-if:name=current()]/srl_nokia-if:breakout-mode)' {
                   error-message "Breakout interfaces are not supported";
                 }
-                must "../../direction = 'down' or ../subinterface" {
+                must "../../direction = 'down' or ../subinterface >=0" {
                   error-message "Type interface MEP direction must be 'down'";
                 }
-                must '../../../../level = 0 or ../../../../level = 1 or ../subinterface' {
+                must '../../../../level = 0 or ../../../../level = 1 or ../subinterface >=0' {
                   error-message "Type interface MEP level must be 0 or 1";
                 }
-                must 'not(../../../network-instance/name) or ../subinterface' {
+                must 'not(../../../network-instance/name) or ../subinterface >=0' {
                   error-message "The interface MEP cannot specify a network instance";
                 }
               }
@@ -997,6 +1025,9 @@ module srl_nokia-ethcfm {
                   "Reference to a subinterface
 
                    This requires the base interface to be specified using the interface leaf in this container.";
+                must "(/srl_nokia-if:interface[srl_nokia-if:name=current()/../interface]/srl_nokia-if:subinterface[srl_nokia-if:index=current()]/srl_nokia-if:type ='bridged')" {
+                  error-message "Platform requires subinterface type bridged";
+                }
               }
             }
             leaf admin-state {
@@ -1016,6 +1047,7 @@ module srl_nokia-ethcfm {
                  and therefore cannot support the direction 'up'.";
             }
             leaf mac-address {
+              if-feature "srl_nokia-feat:ethcfm-mp-mac-address";
               type srl_nokia-comm:unicast-mac-address;
               description
                 "The optional unicast MAC address configuration for the MEP
@@ -1063,6 +1095,9 @@ module srl_nokia-ethcfm {
                   type srl_nokia-ethcfm-types:action-type;
                   must "../../../direction != 'up' or . = 'deny'" {
                     error-message "ccm-local-fault is only supported on down MEPs";
+                  }
+                  must "not(../../../interface-ref/subinterface) or . = 'deny'" {
+                    error-message "ccm-local-fault is only supported on Ethernet interfaces";
                   }
                   default "deny";
                   description
@@ -1298,7 +1333,7 @@ module srl_nokia-ethcfm {
   }
 
   augment "/srl_nokia-if:interface/srl_nokia-if:subinterface" {
-    if-feature "srl_nokia-feat:ethcfm and srl_nokia-feat:oam";
+    if-feature "srl_nokia-feat:ethcfm-subinterface";
     uses squelching;
   }
 }

@@ -21,6 +21,10 @@ module srl_nokia-maintenance-policies {
   description
     "Configuration related to maintenance policies ";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -36,6 +40,9 @@ module srl_nokia-maintenance-policies {
     container maintenance-policies {
       if-feature "srl_nokia-feat:maintenance-policies";
       presence "Configure maintenance policies";
+      must "(../srl_nokia-netinst:type = 'srl_nokia-netinst:default')" {
+        error-message "maintenance-policies are only allowed on network-instance of type default";
+      }
       description
         "Container with maintenance policies";
       list policy {
@@ -46,13 +53,24 @@ module srl_nokia-maintenance-policies {
             "A unique identifying name for the maintenance policy";
         }
         leaf revert-timer {
-          type uint32 {
-            range "1..4320";
+          type union {
+            type uint32 {
+              range "1..4320";
+            }
+            type enumeration {
+              enum disable {
+                value -1;
+              }
+            }
           }
           units "seconds";
-          default "10";
+          default "disable";
           description
-            "Revert timer for the segment-list";
+            "Revert timer for the segment-list.
+
+             Timer till a revert to primary/best path after it is recovered from a failure. In case of uncolored te-policy, applies to primary segment-list and in case of colored te-policy applies to best candidate path.
+
+             The default is 0 seconds.";
         }
         container seamless-bfd {
           presence "Enable Seamless BFD within protection policy";
@@ -94,24 +112,38 @@ module srl_nokia-maintenance-policies {
                at the far-end to match an appropriate polciy to return the traffic.";
           }
           leaf hold-down-timer {
-            type uint16;
+            type union {
+              type uint32 {
+                range "1..500";
+              }
+              type enumeration {
+                enum disable {
+                  value -1;
+                }
+              }
+            }
             units "seconds";
+            default "4";
             description
               "Specifies a hold-down timer value when seamless-bfd is enabled
 
-               This timer is started whenever the SBFD session finishes a transition from up->down->up. While this timer is running the SBFD session state stays in hold-down and the corresponding segment-list stays in sbfd-down state.
+               The timer is started when the number of S-BFD sessions that are up drops below the threshold. The TE-policy path is not considered to be up again until the hold-down timer has expired and the number of S-BFD sessions that are up equals or exceeds the threshold.
+               A grace preiod after session down such that sBFD session flaps does not impact active path.
 
-               The default is 3 seconds.";
+               The default is 4 seconds.";
           }
           leaf wait-for-up-timer {
-            type uint16;
+            type uint16 {
+              range "1..1800";
+            }
             units "seconds";
+            default "4";
             description
               "Specifies a wait-for-up timer value when seamless-bfd is enabled
 
-               This timer is started whenever the sBFD session finishes a transition from down->up. While this timer is running the SBFD session state stays in hold-down and the corresponding segment-list stays in sbfd-down state.
+               This timer takes effect if BFD does not come up, or BFD goes from up to down. The timer is started when BFD is first enabled on a segment-list or BFD transitions from up to down. When the timer expires if BFD is not yet come up, then the path is torn down by removing it from the TTM and the PI and the retry timer is started.
 
-               The default is 3 seconds.";
+               The default is 4 seconds.";
           }
           leaf mode {
             type enumeration {
@@ -120,6 +152,9 @@ module srl_nokia-maintenance-policies {
               enum linear;
             }
             default "none";
+            must ". = 'none' or . = 'linear'" {
+              error-message "ecmp-protected option is only available for colored te-policies";
+            }
             description
               "Specifies requested protection method
 

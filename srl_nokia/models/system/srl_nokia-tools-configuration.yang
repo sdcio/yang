@@ -4,13 +4,19 @@ module srl_nokia-tools-configuration {
   prefix srl-tools-config;
 
   import srl_nokia-tools-system {
-    prefix srl_nokia-tools-system;
+    prefix srl-tools-system;
+  }
+  import srl_nokia-tools-gnsi-pathz {
+    prefix srl-tools-gnsi-pathz;
   }
   import srl_nokia-common {
     prefix srl-comm;
   }
   import srl_nokia-extensions {
     prefix srl-ext;
+  }
+  import srl_nokia-features {
+    prefix srl-feat;
   }
 
   organization
@@ -21,6 +27,10 @@ module srl_nokia-tools-configuration {
   description
     "This module defines operational commands related to the system configuration.";
 
+  revision 2024-07-31 {
+    description
+      "SRLinux 24.7.1";
+  }
   revision 2024-03-31 {
     description
       "SRLinux 24.3.1";
@@ -61,6 +71,22 @@ module srl_nokia-tools-configuration {
           "Clear the candidate from the system, discarding any changes
 
            This results in any users currently in the candidate being dropped back to running mode.";
+      }
+      leaf lock {
+        if-feature "srl-feat:future-0-0";
+        type empty;
+        description
+          "Lock the candidate
+
+           Prevents modifications from other configuration sessions.";
+      }
+      leaf unlock {
+        if-feature "srl-feat:future-0-0";
+        type empty;
+        description
+          "Unlock the candidate
+
+           Allows modifications from other configuration sessions.";
       }
     }
   }
@@ -232,14 +258,33 @@ module srl_nokia-tools-configuration {
         description
           "Remove rescue configuration";
       }
+      leaf lock {
+        if-feature "srl-feat:future-0-0";
+        type empty;
+        description
+          "Lock the running configuration
+
+           Prevents commits from other configuration sessions.";
+      }
+      leaf unlock {
+        if-feature "srl-feat:future-0-0";
+        type empty;
+        description
+          "Unlock the running configuration
+
+           Allows commits from other configuration sessions.";
+      }
       uses configuration-tools-checkpoints-top;
       uses configuration-tools-sessions-top;
       uses configuration-tools-candidates-top;
       uses configuration-tools-upgrade-top;
+      uses srl-tools-gnsi-pathz:pathz-top {
+        if-feature "srl-feat:gnsi-pathz";
+      }
     }
   }
 
-  augment "/srl_nokia-tools-system:system" {
+  augment "/srl-tools-system:system" {
     srl-ext:first-released "19.11.1";
     uses configuration-top;
   }
